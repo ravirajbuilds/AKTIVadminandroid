@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.anubhavlifecare.ui.home.HomeFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_book_test"
+        android:name="com.example.anubhavlifecare.ui.booking.BookTestFragment"
+        android:label="@string/menu_book_test"
+        tools:layout="@layout/fragment_book_test" />
+
+    <fragment
+        android:id="@+id/nav_my_bookings"
+        android:name="com.example.anubhavlifecare.ui.slideshow.SlideshowFragment"
+        android:label="@string/menu_my_bookings"
+        tools:layout="@layout/fragment_slideshow" />
+
+    <fragment
+        android:id="@+id/nav_my_reports"
+        android:name="com.example.anubhavlifecare.ui.slideshow.SlideshowFragment"
+        android:label="@string/menu_my_reports"
+        tools:layout="@layout/fragment_slideshow" />
+
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.example.anubhavlifecare.ui.home.HomeFragment"
+        android:label="@string/menu_profile"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_contact"
+        android:name="com.example.anubhavlifecare.ui.home.HomeFragment"
+        android:label="@string/menu_contact"
+        tools:layout="@layout/fragment_home" />
+
+    <fragment
+        android:id="@+id/nav_about"
+        android:name="com.example.anubhavlifecare.ui.home.HomeFragment"
+        android:label="@string/menu_about"
+        tools:layout="@layout/fragment_home" />
+</navigation>
