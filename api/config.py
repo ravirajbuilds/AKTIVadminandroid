@@ -35,3 +35,27 @@ def mssql_config() -> dict:
 def neon_url() -> str:
     load_env()
     return os.environ["NEON_DATABASE_URL"]
+
+
+def aktiv_settings() -> dict:
+    """AKTIV write behaviour — receptionist user, test vs live bookings."""
+    load_env()
+    from datetime import date
+
+    allow_live = os.environ.get("AKTIV_ALLOW_LIVE_BOOKINGS", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    test_date_raw = os.environ.get("AKTIV_TEST_BILL_DATE", "2025-07-02")
+    try:
+        test_bill_date = date.fromisoformat(test_date_raw)
+    except ValueError:
+        test_bill_date = date(2025, 7, 2)
+
+    return {
+        "sys_user_key": int(os.environ.get("AKTIV_SYS_USER_KEY", "10")),
+        "sys_machine_key": int(os.environ.get("AKTIV_SYS_MACHINE_KEY", "27")),
+        "allow_live_bookings": allow_live,
+        "test_bill_date": test_bill_date,
+    }

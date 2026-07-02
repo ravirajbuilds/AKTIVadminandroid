@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">Anubhav Life Care</string>
+    <string name="app_name">AKTIV Admin</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Anubhav Life Care</string>
-    <string name="nav_header_subtitle">Book Your Tests Online</string>
+    <string name="nav_header_title">AKTIV Admin</string>
+    <string name="nav_header_subtitle">Clinic billing &amp; appointments</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
 
@@ -15,6 +15,14 @@
     <string name="menu_profile">Profile</string>
     <string name="menu_contact">Contact Us</string>
     <string name="menu_about">About</string>
+
+    <string name="login_username">AKTIV Username</string>
+    <string name="login_password">Password</string>
+    <string name="login_required">Enter username and password</string>
+    <string name="login_failed">Login failed</string>
+    <string name="login_hint">Use your AKTIV desktop login (same as reception PC)</string>
+    <string name="logout">Logout</string>
+    <string name="logged_in_as">Logged in as %1$s</string>
 
     <!-- Authentication -->
     <string name="login">Login</string>
@@ -47,8 +55,8 @@
     <string name="book_now">Book Now</string>
 
     <!-- Home Screen -->
-    <string name="welcome_title">Welcome to Anubhav Life Care</string>
-    <string name="welcome_subtitle">Your trusted partner for diagnostic excellence</string>
+    <string name="welcome_title">AKTIV Admin</string>
+    <string name="welcome_subtitle">Push bills and appointments to AKTIV</string>
     <string name="quick_actions">Quick Actions</string>
     <string name="book_test_title">Book Test</string>
     <string name="book_test_subtitle">Schedule Appointment</string>
@@ -168,8 +176,8 @@
     <string name="menu_about_bn">সম্পর্কে</string>
 
     <!-- Navigation Header Bengali -->
-    <string name="nav_header_title_bn">অনুভব লাইফ কেয়ার</string>
-    <string name="nav_header_subtitle_bn">অনলাইনে আপনার টেস্ট বুক করুন</string>
+    <string name="nav_header_title_bn">AKTIV Admin</string>
+    <string name="nav_header_subtitle_bn">ক্লিনিক বিলিং ও অ্যাপয়েন্টমেন্ট</string>
 
     <!-- Common Actions Bengali -->
     <string name="submit_bn">জমা দিন</string>

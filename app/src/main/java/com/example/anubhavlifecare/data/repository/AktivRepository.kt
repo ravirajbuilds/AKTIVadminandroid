@@ -1,10 +1,12 @@
 package com.example.anubhavlifecare.data.repository
 
+import com.example.anubhavlifecare.data.model.AktivLoginResponse
 import com.example.anubhavlifecare.data.model.AktivBillNumber
 import com.example.anubhavlifecare.data.model.AktivBookingRequest
 import com.example.anubhavlifecare.data.model.AktivBookingResponse
 import com.example.anubhavlifecare.data.model.AktivCollectionCentre
 import com.example.anubhavlifecare.data.model.AktivDoctor
+import com.example.anubhavlifecare.data.model.AktivReceptionUser
 import com.example.anubhavlifecare.data.model.AktivTest
 import com.example.anubhavlifecare.data.remote.AktivApiClient
 import java.time.LocalDate
@@ -13,6 +15,15 @@ import java.time.format.DateTimeFormatter
 class AktivRepository(
     private val api: com.example.anubhavlifecare.data.remote.AktivApi = AktivApiClient.api,
 ) {
+    suspend fun login(userid: String, password: String): Result<AktivLoginResponse> =
+        runCatching {
+            api.login(AktivLoginRequest(userid, password))
+        }
+
+    suspend fun listReceptionUsers(): Result<List<AktivReceptionUser>> = runCatching {
+        api.listUsers()
+    }
+
     suspend fun searchTests(query: String): Result<List<AktivTest>> = runCatching {
         api.searchTests(query = query, limit = 50)
     }
@@ -26,16 +37,14 @@ class AktivRepository(
             api.listCollectionCentres(query)
         }
 
-    suspend fun getNextBillNumber(billDate: LocalDate? = null): Result<AktivBillNumber> =
-        runCatching {
-            val dateStr = billDate?.format(DateTimeFormatter.ISO_LOCAL_DATE)
-            api.nextBillNumber(billDate = dateStr)
-        }
+    suspend fun getNextBillNumber(
+        billDate: LocalDate? = null,
+        testMode: Boolean? = null,
+    ): Result<AktivBillNumber> = runCatching {
+        val dateStr = billDate?.format(DateTimeFormatter.ISO_LOCAL_DATE)
+        api.nextBillNumber(billDate = dateStr, testMode = testMode)
+    }
 
-    /**
-     * Push booked patient data into AKTIV (Bill + appointment).
-     * [apntDate] is sent as today's date on the server automatically.
-     */
     suspend fun pushBookingToAktiv(request: AktivBookingRequest): Result<AktivBookingResponse> =
         runCatching {
             api.pushBooking(request)
@@ -57,6 +66,8 @@ class AktivRepository(
         receiptMode: String = "CASH",
         chequeNo: String? = null,
         remarks: String? = null,
+        testMode: Boolean? = null,
+        sysUserKey: Int? = null,
     ): Result<AktivBookingResponse> = pushBookingToAktiv(
         AktivBookingRequest(
             patientName = patientName,
@@ -74,6 +85,16 @@ class AktivRepository(
             receiptMode = receiptMode,
             chequeNo = chequeNo,
             remarks = remarks,
+            testMode = testMode,
+            sysUserKey = sysUserKey,
         ),
     )
+
+    /** Void receipt only — never deletes the AKTIV bill row. */
+    suspend fun cancelBooking(billKey: Int, sysUserKey: Int? = null): Result<Boolean> =
+        runCatching {
+            val body = if (sysUserKey != null) mapOf("sys_user_key" to sysUserKey) else emptyMap()
+            api.cancelBooking(billKey, body)
+            true
+        }
 }

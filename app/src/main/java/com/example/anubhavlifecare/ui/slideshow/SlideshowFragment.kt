@@ -98,7 +98,7 @@ class SlideshowFragment : Fragment() {
             📧 Email Updates:
             All booking updates will be sent to your registered email address and also to contact.anubhavlife@gmail.com
             
-            🏥 Anubhav Life Care
+            🏥 AKTIV Admin
             📞 +91-9230755875 | +91-9230755870
             📱 WhatsApp: +91-9230755876
             """.trimIndent()

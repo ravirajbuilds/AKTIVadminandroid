@@ -15,7 +15,9 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.example.anubhavlifecare.databinding.ActivityMainBinding
+import com.example.anubhavlifecare.ui.login.LoginActivity
 import com.example.anubhavlifecare.utils.LanguageManager
+import com.example.anubhavlifecare.utils.SessionManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,10 +28,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (!SessionManager.isLoggedIn(this)) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize language manager
         languageManager = LanguageManager(this)
 
         setSupportActionBar(binding.appBarMain.toolbar)
@@ -40,8 +47,6 @@ class MainActivity : AppCompatActivity() {
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.nav_home,
@@ -53,6 +58,21 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        navView.setNavigationItemSelectedListener { item ->
+            if (item.itemId == R.id.nav_logout) {
+                SessionManager.clear(this)
+                startActivity(Intent(this, LoginActivity::class.java))
+                finish()
+                true
+            } else {
+                val handled = androidx.navigation.ui.NavigationUI.onNavDestinationSelected(item, navController)
+                if (handled) drawerLayout.closeDrawers()
+                handled
+            }
+        }
+
+        updateNavigationHeader()
     }
 
     private fun setupFabButtons() {
@@ -85,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         val message = if (languageManager.isBengali()) {
             "হ্যালো, আমি অনুভব লাইফ কেয়ার থেকে টেস্ট বুক করতে চাই।"
         } else {
-            "Hello, I want to book a test from Anubhav Life Care."
+            "Hello, I want to book a test via AKTIV Admin."
         }
 
         try {
@@ -159,22 +179,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateNavigationHeader() {
         val headerView = binding.navView.getHeaderView(0)
+        val username = SessionManager.getUsername(this) ?: SessionManager.getUserid(this).orEmpty()
+        headerView.findViewById<android.widget.TextView>(R.id.navHeaderUser)?.text =
+            getString(R.string.logged_in_as, username)
 
-        // Update the feature badges with IDs we just added
-        headerView.findViewById<android.widget.TextView>(com.example.anubhavlifecare.R.id.testsLabel)?.apply {
+        headerView.findViewById<android.widget.TextView>(R.id.testsLabel)?.apply {
             text = if (languageManager.isBengali()) {
-                "১৫০০+ টেস্ট"
+                "AKTIV বিল"
             } else {
-                "1500+ Tests"
+                "AKTIV Bills"
             }
             setTextColor(getColor(R.color.brand_yellow))
         }
         
-        headerView.findViewById<android.widget.TextView>(com.example.anubhavlifecare.R.id.reportsLabel)?.apply {
+        headerView.findViewById<android.widget.TextView>(R.id.reportsLabel)?.apply {
             text = if (languageManager.isBengali()) {
-                "একই দিন রিপোর্ট"
+                "টেস্ট মোড"
             } else {
-                "Same Day Reports"
+                "Test Mode"
             }
             setTextColor(getColor(R.color.brand_dark_blue))
         }

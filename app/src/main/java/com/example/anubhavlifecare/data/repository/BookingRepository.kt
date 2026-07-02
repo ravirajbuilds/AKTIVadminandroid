@@ -48,5 +48,7 @@ class BookingRepository(
         Result.success(null)
 
     suspend fun cancelBooking(bookingId: String): Result<Boolean> =
-        Result.success(true)
+        bookingId.toIntOrNull()?.let { billKey ->
+            aktivRepository.cancelBooking(billKey)
+        } ?: Result.success(true)
 }

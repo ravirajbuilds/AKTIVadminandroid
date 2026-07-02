@@ -20,7 +20,7 @@ class EmailManager {
                 // This is a placeholder implementation
                 // Will be replaced with actual email sending once dependencies are loaded
 
-                val emailSubject = "Booking Confirmation - Anubhav Life Care"
+                val emailSubject = "Booking Confirmation - AKTIV Admin"
                 val emailBody = createBookingConfirmationEmail(booking)
 
                 Log.d(TAG, "Sending booking confirmation email")
@@ -41,7 +41,7 @@ class EmailManager {
     suspend fun sendBookingUpdate(booking: Booking): Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
-                val emailSubject = "Booking Update - Anubhav Life Care"
+                val emailSubject = "Booking Update - AKTIV Admin"
                 val emailBody = createBookingUpdateEmail(booking)
 
                 Log.d(TAG, "Sending booking update email")
@@ -63,7 +63,7 @@ class EmailManager {
         return """
             Dear ${booking.userName},
             
-            Thank you for booking with Anubhav Life Care!
+            Thank you for booking with AKTIV Admin!
             
             BOOKING DETAILS:
             ================
@@ -104,7 +104,7 @@ class EmailManager {
             🌐 www.anubhavlifecare.in
             
             Best regards,
-            Anubhav Life Care Team
+            AKTIV Admin Team
         """.trimIndent()
     }
 
@@ -134,7 +134,7 @@ class EmailManager {
             📱 WhatsApp: +91-9230755876
             
             Best regards,
-            Anubhav Life Care Team
+            AKTIV Admin Team
         """.trimIndent()
     }
 }

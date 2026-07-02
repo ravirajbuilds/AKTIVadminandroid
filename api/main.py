@@ -1,4 +1,4 @@
-"""REST API for Anubhav Life Care Android app ↔ AKTIV."""
+"""REST API for AKTIV Admin Android app ↔ AKTIV."""
 from __future__ import annotations
 
 from datetime import date
@@ -8,16 +8,20 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from auth import authenticate
 from aktiv_booking import (
     DEFAULT_COLL_CENTRE_KEY,
+    cancel_booking,
     list_collection_centres,
+    list_reception_users,
     next_bill_number,
     push_booking,
     search_doctors,
     search_tests,
 )
+from config import aktiv_settings
 
-app = FastAPI(title="Anubhav AKTIV API", version="1.0.0")
+app = FastAPI(title="AKTIV Admin API", version="1.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,11 +46,51 @@ class BookingRequest(BaseModel):
     receipt_mode: str = "CASH"
     cheque_no: Optional[str] = None
     remarks: Optional[str] = None
+    test_mode: Optional[bool] = None
+    sys_user_key: Optional[int] = None
+
+
+class CancelRequest(BaseModel):
+    sys_user_key: Optional[int] = None
+
+
+class LoginRequest(BaseModel):
+    userid: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+@app.post("/api/auth/login")
+def api_login(body: LoginRequest):
+    try:
+        user = authenticate(body.userid, body.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return {
+        "success": True,
+        "user_key": user.user_key,
+        "userid": user.userid,
+        "username": user.username,
+    }
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    settings = aktiv_settings()
+    return {
+        "status": "ok",
+        "allow_live_bookings": settings["allow_live_bookings"],
+        "test_bill_date": settings["test_bill_date"].isoformat(),
+        "default_sys_user_key": settings["sys_user_key"],
+    }
+
+
+@app.get("/api/users")
+def api_users():
+    """Receptionist logins — bills are stamped with sys_insert_user_key."""
+    return list_reception_users()
 
 
 @app.get("/api/tests")
@@ -65,8 +109,11 @@ def api_collection_centres(q: str = ""):
 
 
 @app.get("/api/next-bill-number")
-def api_next_bill_number(bill_date: Optional[date] = None):
-    return next_bill_number(bill_date)
+def api_next_bill_number(bill_date: Optional[date] = None, test_mode: Optional[bool] = None):
+    settings = aktiv_settings()
+    is_test = test_mode if test_mode is not None else not settings["allow_live_bookings"]
+    effective_date = settings["test_bill_date"] if is_test else (bill_date or date.today())
+    return next_bill_number(effective_date)
 
 
 @app.post("/api/bookings")
@@ -88,12 +135,16 @@ def api_create_booking(body: BookingRequest):
             receipt_mode=body.receipt_mode,
             cheque_no=body.cheque_no,
             remarks=body.remarks,
+            test_mode=body.test_mode,
+            sys_user_key=body.sys_user_key,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    settings = aktiv_settings()
+    is_test = body.test_mode if body.test_mode is not None else not settings["allow_live_bookings"]
     return {
         "success": True,
         "bill_key": result.bill_key,
@@ -103,4 +154,18 @@ def api_create_booking(body: BookingRequest):
         "apnt_key": result.apnt_key,
         "net_amount": result.net_amount,
         "apnt_date": date.today().isoformat(),
+        "test_mode": is_test,
     }
+
+
+@app.post("/api/bookings/{bill_key}/cancel")
+def api_cancel_booking(bill_key: int, body: CancelRequest = CancelRequest()):
+    """
+    Void receipt amounts only — never deletes bill rows (preserves ALC serials).
+    """
+    try:
+        return cancel_booking(bill_key, sys_user_key=body.sys_user_key)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

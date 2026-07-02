@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Anubhav Life Care"
-include(":app")
+rootProject.name = "AKTIV Admin"
 include(":app")

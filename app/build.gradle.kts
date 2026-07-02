@@ -28,6 +28,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "AKTIV_API_URL", "\"http://192.168.29.157:8080/\"")
         }
         debug {
             buildConfigField("String", "SUPABASE_URL", "\"https://frkttphmaxuafxulvrkc.supabase.co\"")

@@ -32,7 +32,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
-                android:text="ALC"
+                android:text="AKTIV"
                 android:textColor="@color/brand_dark_blue"
                 android:textSize="24sp"
                 android:textStyle="bold" />
@@ -62,6 +62,16 @@
         android:textSize="16sp"
         android:alpha="0.95" />
 
+    <TextView
+        android:id="@+id/navHeaderUser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/text_white"
+        android:textSize="14sp"
+        android:alpha="0.9" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -76,7 +86,7 @@
             android:fontFamily="sans-serif-medium"
             android:paddingHorizontal="14dp"
             android:paddingVertical="8dp"
-            android:text="1500+ Tests"
+            android:text="AKTIV Bills"
             android:textColor="@color/brand_yellow"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -90,7 +100,7 @@
             android:fontFamily="sans-serif-medium"
             android:paddingHorizontal="14dp"
             android:paddingVertical="8dp"
-            android:text="Same Day Reports"
+            android:text="Test Mode"
             android:textColor="@color/brand_dark_blue"
             android:textSize="14sp"
             android:textStyle="bold" />

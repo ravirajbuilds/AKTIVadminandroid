@@ -6,6 +6,7 @@ from datetime import date, datetime
 from typing import Any
 
 from db import fetch_all, fetch_one, mssql_conn, neon_conn
+from config import aktiv_settings
 
 DEFAULT_COLL_CENTRE_KEY = 1  # ANUBHAV LIFE CARE
 DEFAULT_COLL_CENTRE_NAME = "ANUBHAV LIFE CARE"
@@ -13,8 +14,6 @@ BILL_PREFIX2 = "ALC"
 COMPANY_KEY = 1
 BRANCH_KEY = 1
 ACCOUNT_KEY = 10
-SYS_USER_KEY = 10
-SYS_MACHINE_KEY = 27
 RECEIPT_MODE = {"CASH": 1, "UPI": 3, "CARD": 6}
 SEX = {"MALE": 1, "FEMALE": 2, "OTHER": -1}
 
@@ -37,6 +36,104 @@ class BookingResult:
     registration_no: str
     apnt_key: int
     net_amount: float
+
+
+def list_reception_users() -> list[dict[str, Any]]:
+    """
+    Receptionist accounts from SYS_MAST_USERS.
+    Desktop AKTIV login sets sys_insert_user_key on each bill to the logged-in user_key.
+    """
+    with mssql_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT user_key, userid, username
+            FROM SYS_MAST_USERS
+            WHERE (flg_system IS NULL OR flg_system = 0)
+              AND (userid IS NOT NULL OR username IS NOT NULL)
+            ORDER BY COALESCE(userid, username)
+            """
+        )
+        cols = [d[0].lower() for d in cur.description]
+        return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+def _resolve_booking_context(
+    *,
+    bill_date: date | None,
+    test_mode: bool | None,
+    sys_user_key: int | None,
+) -> tuple[date, date, int, int, bool, float]:
+    """Return bill_date, apnt_date, sys_user_key, sys_machine_key, is_test, deduction."""
+    settings = aktiv_settings()
+    is_test = test_mode if test_mode is not None else not settings["allow_live_bookings"]
+
+    if is_test:
+        bill_date = settings["test_bill_date"]
+    else:
+        bill_date = bill_date or date.today()
+
+    apnt_date = date.today()
+    user_key = sys_user_key or settings["sys_user_key"]
+    machine_key = settings["sys_machine_key"]
+    return bill_date, apnt_date, user_key, machine_key, is_test, 0.0
+
+
+def cancel_booking(bill_key: int, *, sys_user_key: int | None = None) -> dict[str, Any]:
+    """
+    Void a booking without deleting AKTIV rows (preserves ALC serial numbering).
+    Only receipt amounts are zeroed — bill/apnt rows stay intact.
+    """
+    settings = aktiv_settings()
+    user_key = sys_user_key or settings["sys_user_key"]
+    machine_key = settings["sys_machine_key"]
+    now = datetime.now()
+
+    with mssql_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT bill_key, bill_no FROM BILL_HEAD WHERE bill_key = %s", (bill_key,))
+        row = cur.fetchone()
+        if not row:
+            raise ValueError(f"bill_key {bill_key} not found")
+
+        cur.execute(
+            """
+            UPDATE BILL_HEAD
+            SET rcptamount_bill = 0,
+                receivedamount = 0,
+                sys_last_mod_date = %s,
+                sys_mod_user_key = %s,
+                sys_mod_machine_key = %s
+            WHERE bill_key = %s
+            """,
+            (now, user_key, machine_key, bill_key),
+        )
+        cur.execute(
+            """
+            UPDATE APNT_HEAD
+            SET rcptamount_apnt = 0,
+                receivedamount = 0,
+                sys_last_mod_date = %s,
+                sys_mod_user_key = %s,
+                sys_mod_machine_key = %s
+            WHERE bill_key = %s
+            """,
+            (now, user_key, machine_key, bill_key),
+        )
+        cur.execute(
+            """
+            UPDATE RECEIPT_HEAD
+            SET receiptamount = 0,
+                amountpaid = 0,
+                sys_last_mod_date = %s,
+                sys_mod_user_key = %s,
+                sys_mod_machine_key = %s
+            WHERE bill_key = %s
+            """,
+            (now, user_key, machine_key, bill_key),
+        )
+        conn.commit()
+
+    return {"success": True, "bill_key": bill_key, "bill_no": str(row[1])}
 
 
 def _bill_prefix1(d: date) -> str:
@@ -210,6 +307,8 @@ def _find_or_create_patient(
     refrdoctor_key: int | None,
     collcentre_key: int,
     bill_date: date,
+    sys_user_key: int,
+    sys_machine_key: int,
 ) -> tuple[int, str]:
     cur.execute(
         """
@@ -261,8 +360,8 @@ def _find_or_create_patient(
             patient_name, phone, sex, age_year, age_month, age_day, bill_date,
             refrdoctor_key, collcentre_key,
             COMPANY_KEY, ACCOUNT_KEY, BRANCH_KEY,
-            now, SYS_USER_KEY, SYS_MACHINE_KEY,
-            now, SYS_USER_KEY, SYS_MACHINE_KEY,
+            now, sys_user_key, sys_machine_key,
+            now, sys_user_key, sys_machine_key,
         ),
     )
     return regt_key, regt_no
@@ -285,21 +384,43 @@ def push_booking(
     receipt_mode: str = "CASH",
     cheque_no: str | None = None,
     remarks: str | None = None,
+    test_mode: bool | None = None,
+    sys_user_key: int | None = None,
 ) -> BookingResult:
     """
     Create a bill in AKTIV matching the desktop Bill screen.
-    apntdate is always set to today (current date) per requirements.
+    Test mode uses AKTIV_TEST_BILL_DATE with full deduction (net/receipt = 0).
+    IPD/bed fields are intentionally left blank — not used at this clinic.
+    Cheque/ref no is stored only for UPI receipts.
     """
-    bill_date = bill_date or date.today()
-    apnt_date = date.today()
+    bill_date, apnt_date, user_key, machine_key, is_test, _ = _resolve_booking_context(
+        bill_date=bill_date,
+        test_mode=test_mode,
+        sys_user_key=sys_user_key,
+    )
     now = datetime.now()
     bill_time = _decimal_time(now)
     sex_code = SEX.get(sex.upper(), SEX["MALE"])
     receipt_mode_code = RECEIPT_MODE.get(receipt_mode.upper(), RECEIPT_MODE["CASH"])
 
     tests = _resolve_tests(test_keys)
-    net_amount = sum(t.rate for t in tests)
-    paid = float(amount_paid if amount_paid is not None else net_amount)
+    bill_amount = sum(t.rate for t in tests)
+    if is_test:
+        deduction = -bill_amount
+        net_amount = 0.0
+        paid = 0.0
+        bill_remarks = (remarks or "").strip()
+        if "TEST BOOKING" not in bill_remarks.upper():
+            bill_remarks = f"TEST BOOKING {bill_remarks}".strip()
+        remarks = bill_remarks or "TEST BOOKING"
+    else:
+        deduction = 0.0
+        net_amount = bill_amount
+        paid = float(amount_paid if amount_paid is not None else net_amount)
+
+    # UPI only for cheque/ref number
+    if receipt_mode.upper() != "UPI":
+        cheque_no = None
 
     bill_info = next_bill_number(bill_date)
     if bill_number:
@@ -322,6 +443,8 @@ def push_booking(
             refrdoctor_key=refrdoctor_key,
             collcentre_key=collcentre_key,
             bill_date=bill_date,
+            sys_user_key=user_key,
+            sys_machine_key=machine_key,
         )
 
         bill_key = _next_key(cur, "BILL_HEAD", "bill_key")
@@ -334,7 +457,7 @@ def push_booking(
                 regt_key, registration_no, firstname, patientname, phone,
                 sex, ageyear, agemonth, ageday,
                 refrdoctor_key, collcentre_key, remarks,
-                billamount, netamount, rcptamount_bill, receivedamount,
+                billamount, deduction, netamount, rcptamount_bill, receivedamount,
                 company_key, branch_key, account_key,
                 sys_insert_date, sys_insert_user_key, sys_insert_machine_key,
                 sys_last_mod_date, sys_mod_user_key, sys_mod_machine_key
@@ -344,7 +467,7 @@ def push_booking(
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
                 %s, %s, %s,
-                %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
                 %s, %s, %s,
                 %s, %s, %s,
                 %s, %s, %s
@@ -370,7 +493,8 @@ def push_booking(
                 refrdoctor_key,
                 collcentre_key,
                 remarks,
-                net_amount,
+                bill_amount,
+                deduction,
                 net_amount,
                 paid,
                 paid,
@@ -378,11 +502,11 @@ def push_booking(
                 BRANCH_KEY,
                 ACCOUNT_KEY,
                 now,
-                SYS_USER_KEY,
-                SYS_MACHINE_KEY,
+                user_key,
+                machine_key,
                 now,
-                SYS_USER_KEY,
-                SYS_MACHINE_KEY,
+                user_key,
+                machine_key,
             ),
         )
 
@@ -474,7 +598,7 @@ def push_booking(
                 age_day,
                 refrdoctor_key,
                 collcentre_key,
-                net_amount,
+                bill_amount,
                 net_amount,
                 paid,
                 paid,
@@ -482,11 +606,11 @@ def push_booking(
                 BRANCH_KEY,
                 ACCOUNT_KEY,
                 now,
-                SYS_USER_KEY,
-                SYS_MACHINE_KEY,
+                user_key,
+                machine_key,
                 now,
-                SYS_USER_KEY,
-                SYS_MACHINE_KEY,
+                user_key,
+                machine_key,
             ),
         )
 
@@ -519,11 +643,11 @@ def push_booking(
                     ACCOUNT_KEY,
                     BRANCH_KEY,
                     now,
-                    SYS_USER_KEY,
-                    SYS_MACHINE_KEY,
+                    user_key,
+                    machine_key,
                     now,
-                    SYS_USER_KEY,
-                    SYS_MACHINE_KEY,
+                    user_key,
+                    machine_key,
                 ),
             )
 

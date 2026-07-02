@@ -1,7 +1,6 @@
-# Anubhav Life Care - Diagnostic Booking App
+# AKTIV Admin
 
-A comprehensive Android application for booking diagnostic tests online for Anubhav Life Care
-clinic (www.anubhavlifecare.in).
+Android admin app for pushing bills and appointments into AKTIV (Anubhav Life Care clinic).
 
 ## Features
 

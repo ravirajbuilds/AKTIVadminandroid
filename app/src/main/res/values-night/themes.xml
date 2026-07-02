@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.AnubhavLifeCare" parent="Theme.Material3.DayNight">
+    <style name="Theme.AktivAdmin" parent="Theme.Material3.DayNight">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/brand_blue</item>
         <item name="colorPrimaryVariant">@color/brand_dark_blue</item>

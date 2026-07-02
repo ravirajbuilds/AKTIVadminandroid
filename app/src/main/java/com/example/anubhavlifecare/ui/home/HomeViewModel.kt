@@ -13,7 +13,7 @@ class HomeViewModel : ViewModel() {
     private val testRepository = TestRepository()
 
     private val _welcomeMessage = MutableLiveData<String>().apply {
-        value = "Welcome to Anubhav Life Care"
+        value = "AKTIV Admin"
     }
     val welcomeMessage: LiveData<String> = _welcomeMessage
 

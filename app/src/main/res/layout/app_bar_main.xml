@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fitsSystemWindows="true"
-        android:theme="@style/Theme.AnubhavLifeCare.AppBarOverlay"
+        android:theme="@style/Theme.AktivAdmin.AppBarOverlay"
         app:elevation="8dp">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -19,7 +19,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@drawable/gradient_primary"
             android:elevation="4dp"
-            app:popupTheme="@style/Theme.AnubhavLifeCare.PopupOverlay"
+            app:popupTheme="@style/Theme.AktivAdmin.PopupOverlay"
             app:title="@string/app_name"
             app:titleTextColor="@color/text_white"
             app:navigationIconTint="@color/text_white">

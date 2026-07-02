@@ -21,7 +21,7 @@ import com.example.anubhavlifecare.data.model.AktivDoctor
 import com.example.anubhavlifecare.data.model.AktivTest
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import java.time.LocalDate
+import com.google.android.material.textfield.TextInputLayout
 import java.time.format.DateTimeFormatter
 
 class BookTestFragment : Fragment() {
@@ -39,8 +39,13 @@ class BookTestFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel = ViewModelProvider(this)[BookTestViewModel::class.java]
+        viewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application),
+        )[BookTestViewModel::class.java]
 
+        val tvLoggedInUser = view.findViewById<TextView>(R.id.tvLoggedInUser)
+        val tvTestModeBanner = view.findViewById<TextView>(R.id.tvTestModeBanner)
         val etBillNo = view.findViewById<TextInputEditText>(R.id.etBillNo)
         val etBillDate = view.findViewById<TextInputEditText>(R.id.etBillDate)
         val etPatientName = view.findViewById<TextInputEditText>(R.id.etPatientName)
@@ -56,12 +61,11 @@ class BookTestFragment : Fragment() {
         val tvSelected = view.findViewById<TextView>(R.id.tvSelectedTests)
         val etAmountPaid = view.findViewById<TextInputEditText>(R.id.etAmountPaid)
         val spinnerReceipt = view.findViewById<AutoCompleteTextView>(R.id.spinnerReceiptMode)
+        val layoutChequeRef = view.findViewById<TextInputLayout>(R.id.layoutChequeRef)
         val etChequeNo = view.findViewById<TextInputEditText>(R.id.etChequeNo)
         val etRemarks = view.findViewById<TextInputEditText>(R.id.etRemarks)
         val btnSubmit = view.findViewById<MaterialButton>(R.id.btnSubmitBooking)
         val progress = view.findViewById<ProgressBar>(R.id.progressBar)
-
-        etBillDate.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
 
         spinnerSex.setAdapter(
             ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, listOf("MALE", "FEMALE")),
@@ -72,6 +76,16 @@ class BookTestFragment : Fragment() {
             ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, listOf("CASH", "UPI", "CARD")),
         )
         spinnerReceipt.setText("CASH", false)
+
+        fun updateChequeVisibility(mode: String) {
+            val isUpi = mode.equals("UPI", ignoreCase = true)
+            layoutChequeRef.visibility = if (isUpi) View.VISIBLE else View.GONE
+            if (!isUpi) etChequeNo.text?.clear()
+        }
+        spinnerReceipt.setOnItemClickListener { _, _, _, _ ->
+            updateChequeVisibility(spinnerReceipt.text?.toString().orEmpty())
+        }
+        updateChequeVisibility("CASH")
 
         testAdapter = AktivTestAdapter { test -> viewModel.toggleTest(test) }
         rvTests.layoutManager = LinearLayoutManager(requireContext())
@@ -112,15 +126,33 @@ class BookTestFragment : Fragment() {
             progress.visibility = if (state.isLoading) View.VISIBLE else View.GONE
             btnSubmit.isEnabled = !state.isLoading
 
-            state.billNumber?.let { bill ->
-                etBillNo.setText(bill.billNo)
+            tvTestModeBanner.visibility = if (state.testMode) View.VISIBLE else View.GONE
+            if (state.loggedInUser.isNotBlank()) {
+                tvLoggedInUser.text = getString(R.string.logged_in_as, state.loggedInUser)
+                tvLoggedInUser.visibility = View.VISIBLE
+            }
+            etBillDate.setText(
+                state.billDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+            )
+
+            state.billNumber?.let { bill -> etBillNo.setText(bill.billNo) }
+
+            if (state.testMode) {
+                etAmountPaid.setText("0")
+                etAmountPaid.isEnabled = false
+                btnSubmit.text = "Push TEST to AKTIV (₹0)"
+            } else {
+                etAmountPaid.isEnabled = true
+                btnSubmit.text = "Push to AKTIV"
             }
 
             testAdapter.submit(state.tests, state.selectedTests)
+            val total = state.selectedTests.sumOf { it.rate }
             tvSelected.text = if (state.selectedTests.isEmpty()) {
                 "Selected: none"
+            } else if (state.testMode) {
+                "Selected: ${state.selectedTests.size} test(s) — ₹$total (discounted to ₹0)"
             } else {
-                val total = state.selectedTests.sumOf { it.rate }
                 "Selected: ${state.selectedTests.size} test(s) — ₹$total"
             }
 
@@ -152,9 +184,10 @@ class BookTestFragment : Fragment() {
                 viewModel.clearMessages()
             }
             state.success?.let { response ->
+                val label = if (response.testMode) "TEST booked" else "Booked"
                 Toast.makeText(
                     requireContext(),
-                    "Booked ${response.billNo} (Apnt: ${response.apntDate})",
+                    "$label ${response.billNo} (Apnt: ${response.apntDate}, net ₹${response.netAmount})",
                     Toast.LENGTH_LONG,
                 ).show()
                 viewModel.clearMessages()

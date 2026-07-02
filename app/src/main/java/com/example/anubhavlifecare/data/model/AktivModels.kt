@@ -2,6 +2,18 @@ package com.example.anubhavlifecare.data.model
 
 import com.google.gson.annotations.SerializedName
 
+data class AktivLoginRequest(
+    val userid: String,
+    val password: String,
+)
+
+data class AktivLoginResponse(
+    val success: Boolean,
+    @SerializedName("user_key") val userKey: Int,
+    val userid: String,
+    val username: String,
+)
+
 data class AktivTest(
     @SerializedName("test_key") val testKey: Int,
     @SerializedName("testcode") val testCode: String,
@@ -32,6 +44,15 @@ data class AktivCollectionCentre(
     @SerializedName("coll_initial") val collInitial: String? = null,
 )
 
+data class AktivReceptionUser(
+    @SerializedName("user_key") val userKey: Int,
+    val userid: String? = null,
+    val username: String? = null,
+) {
+    val displayName: String
+        get() = userid ?: username ?: "User $userKey"
+}
+
 data class AktivBillNumber(
     @SerializedName("bill_prefix1") val billPrefix1: String,
     @SerializedName("bill_prefix2") val billPrefix2: String,
@@ -59,6 +80,8 @@ data class AktivBookingRequest(
     @SerializedName("receipt_mode") val receiptMode: String = "CASH",
     @SerializedName("cheque_no") val chequeNo: String? = null,
     val remarks: String? = null,
+    @SerializedName("test_mode") val testMode: Boolean? = null,
+    @SerializedName("sys_user_key") val sysUserKey: Int? = null,
 )
 
 data class AktivBookingResponse(
@@ -70,4 +93,5 @@ data class AktivBookingResponse(
     @SerializedName("apnt_key") val apntKey: Int,
     @SerializedName("net_amount") val netAmount: Double,
     @SerializedName("apnt_date") val apntDate: String,
+    @SerializedName("test_mode") val testMode: Boolean = false,
 )

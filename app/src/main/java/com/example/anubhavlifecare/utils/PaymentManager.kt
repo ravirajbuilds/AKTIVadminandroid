@@ -49,7 +49,7 @@ class PaymentManager(private val activity: Activity) {
         val options = JSONObject()
 
         try {
-            options.put("name", "Anubhav Life Care")
+            options.put("name", "AKTIV Admin")
             options.put("description", description)
             options.put("image", "") // Add clinic logo URL here
             options.put("order_id", "") // Generate order ID from backend
