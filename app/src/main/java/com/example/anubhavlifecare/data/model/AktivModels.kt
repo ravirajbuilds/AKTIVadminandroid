@@ -12,6 +12,7 @@ data class AktivLoginResponse(
     @SerializedName("user_key") val userKey: Int,
     val userid: String,
     val username: String,
+    @SerializedName("is_admin") val isAdmin: Boolean = false,
 )
 
 data class AktivTest(

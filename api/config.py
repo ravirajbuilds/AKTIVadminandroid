@@ -37,6 +37,17 @@ def neon_url() -> str:
     return os.environ["NEON_DATABASE_URL"]
 
 
+def admin_userids() -> set[str]:
+    """
+    AKTIV logins allowed to modify/cancel bookings after they are booked.
+    Configured via AKTIV_ADMIN_USERIDS (comma-separated, case-insensitive).
+    Empty means no one has admin rights — a safe default.
+    """
+    load_env()
+    raw = os.environ.get("AKTIV_ADMIN_USERIDS", "")
+    return {part.strip().upper() for part in raw.split(",") if part.strip()}
+
+
 def aktiv_settings() -> dict:
     """AKTIV write behaviour — receptionist user, test vs live bookings."""
     load_env()

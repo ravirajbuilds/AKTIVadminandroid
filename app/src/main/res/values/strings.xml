@@ -10,9 +10,11 @@
     <!-- Menu Items -->
     <string name="menu_home">Home</string>
     <string name="menu_book_test">Book Test</string>
+    <string name="menu_bill_estimate">Bill Estimate</string>
     <string name="menu_my_bookings">My Bookings</string>
     <string name="menu_my_reports">My Reports</string>
     <string name="menu_profile">Profile</string>
+    <string name="menu_manage_booking">Manage Booking (Admin)</string>
     <string name="menu_contact">Contact Us</string>
     <string name="menu_about">About</string>
 
@@ -24,10 +26,35 @@
     <string name="logout">Logout</string>
     <string name="logged_in_as">Logged in as %1$s</string>
 
+    <!-- Bill Estimate -->
+    <string name="estimate_title">Bill Estimate</string>
+    <string name="estimate_subtitle">Add tests, apply a discount, and share the total on WhatsApp as a photo or text. This does not create an AKTIV bill.</string>
+    <string name="estimate_patient_name">Patient Name (optional)</string>
+    <string name="estimate_phone">WhatsApp Number (optional)</string>
+    <string name="estimate_search_tests">Search tests to add</string>
+    <string name="estimate_selected_tests">Selected Tests</string>
+    <string name="estimate_empty">No tests added yet. Tap a test above to add it.</string>
+    <string name="estimate_discount">Discount</string>
+    <string name="estimate_discount_type">Type</string>
+    <string name="estimate_discount_flat">Flat (₹)</string>
+    <string name="estimate_discount_percent">Percent (%)</string>
+    <string name="estimate_share_photo">Share as Photo (WhatsApp)</string>
+    <string name="estimate_share_text">Send as Text (WhatsApp)</string>
+    <string name="estimate_no_app">Could not open WhatsApp or a sharing app.</string>
+    <string name="estimate_need_test">Add at least one test first.</string>
+
+    <!-- Manage Booking (Admin) -->
+    <string name="manage_title">Manage Booking</string>
+    <string name="manage_subtitle">Admin only: void a booking after it has been created. This zeroes the receipt amounts in AKTIV without deleting the bill.</string>
+    <string name="manage_bill_key">Bill Key (AKTIV bill_key)</string>
+    <string name="manage_cancel_button">Void / Cancel Booking</string>
+    <string name="manage_no_permission">Only admin users can modify a booking after it is booked.</string>
+    <string name="manage_need_bill_key">Enter a valid bill key.</string>
+    <string name="manage_cancel_success">Booking %1$s voided successfully.</string>
+
     <!-- Authentication -->
     <string name="login">Login</string>
     <string name="signup">Sign Up</string>
-    <string name="logout">Logout</string>
     <string name="email">Email</string>
     <string name="password">Password</string>
     <string name="phone">Phone Number</string>

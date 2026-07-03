@@ -7,13 +7,21 @@ object SessionManager {
     private const val KEY_USER_KEY = "user_key"
     private const val KEY_USERID = "userid"
     private const val KEY_USERNAME = "username"
+    private const val KEY_IS_ADMIN = "is_admin"
 
-    fun save(context: Context, userKey: Int, userid: String, username: String) {
+    fun save(
+        context: Context,
+        userKey: Int,
+        userid: String,
+        username: String,
+        isAdmin: Boolean = false,
+    ) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putInt(KEY_USER_KEY, userKey)
             .putString(KEY_USERID, userid)
             .putString(KEY_USERNAME, username)
+            .putBoolean(KEY_IS_ADMIN, isAdmin)
             .apply()
     }
 
@@ -33,6 +41,10 @@ object SessionManager {
     fun getUsername(context: Context): String? =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_USERNAME, null)
+
+    fun isAdmin(context: Context): Boolean =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_IS_ADMIN, false)
 
     fun clear(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

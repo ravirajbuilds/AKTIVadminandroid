@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Bill estimate images rendered for WhatsApp sharing live in cacheDir/estimates. -->
+    <cache-path
+        name="estimates"
+        path="estimates/" />
+</paths>

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from config import admin_userids
 from db import mssql_conn
 
 
@@ -11,6 +12,25 @@ class AuthUser:
     user_key: int
     userid: str
     username: str | None
+    is_admin: bool = False
+
+
+def _is_admin(userid: str | None) -> bool:
+    admins = admin_userids()
+    return bool(admins) and (userid or "").strip().upper() in admins
+
+
+def user_is_admin(user_key: int) -> bool:
+    """Resolve a user_key back to its login and check admin rights (server-side guard)."""
+    with mssql_conn() as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT userid FROM SYS_MAST_USERS WHERE user_key = %s",
+            (user_key,),
+        )
+        row = cur.fetchone()
+    if not row:
+        return False
+    return _is_admin(str(row[0]) if row[0] is not None else None)
 
 
 def authenticate(userid: str, password: str) -> AuthUser:
@@ -38,8 +58,10 @@ def authenticate(userid: str, password: str) -> AuthUser:
     if stored != password:
         raise ValueError("Invalid username or password")
 
+    resolved_userid = str(db_userid or login_id)
     return AuthUser(
         user_key=int(user_key),
-        userid=str(db_userid or login_id),
-        username=str(username) if username else str(db_userid or login_id),
+        userid=resolved_userid,
+        username=str(username) if username else resolved_userid,
+        is_admin=_is_admin(resolved_userid),
     )

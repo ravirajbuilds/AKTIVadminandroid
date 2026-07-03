@@ -13,6 +13,10 @@
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_book_test" />
         <item
+            android:id="@+id/nav_bill_estimate"
+            android:icon="@drawable/ic_whatsapp"
+            android:title="@string/menu_bill_estimate" />
+        <item
             android:id="@+id/nav_my_bookings"
             android:icon="@drawable/ic_menu_slideshow"
             android:title="@string/menu_my_bookings" />
@@ -24,6 +28,11 @@
             android:id="@+id/nav_profile"
             android:icon="@drawable/ic_menu_camera"
             android:title="@string/menu_profile" />
+        <item
+            android:id="@+id/nav_manage_booking"
+            android:icon="@drawable/ic_medical_cross"
+            android:title="@string/menu_manage_booking"
+            android:visible="false" />
     </group>
 
     <item android:title="Account">

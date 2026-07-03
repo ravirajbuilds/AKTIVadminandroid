@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from auth import authenticate
+from auth import authenticate, user_is_admin
 from aktiv_booking import (
     DEFAULT_COLL_CENTRE_KEY,
     cancel_booking,
@@ -73,6 +73,7 @@ def api_login(body: LoginRequest):
         "user_key": user.user_key,
         "userid": user.userid,
         "username": user.username,
+        "is_admin": user.is_admin,
     }
 
 
@@ -162,7 +163,13 @@ def api_create_booking(body: BookingRequest):
 def api_cancel_booking(bill_key: int, body: CancelRequest = CancelRequest()):
     """
     Void receipt amounts only — never deletes bill rows (preserves ALC serials).
+    Restricted to admin logins: only they may modify a booking after it is booked.
     """
+    if body.sys_user_key is None or not user_is_admin(body.sys_user_key):
+        raise HTTPException(
+            status_code=403,
+            detail="Only admin users can modify a booking after it is booked",
+        )
     try:
         return cancel_booking(bill_key, sys_user_key=body.sys_user_key)
     except ValueError as exc:

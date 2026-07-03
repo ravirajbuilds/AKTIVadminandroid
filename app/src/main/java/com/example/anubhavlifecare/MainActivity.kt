@@ -51,13 +51,18 @@ class MainActivity : AppCompatActivity() {
             setOf(
                 R.id.nav_home,
                 R.id.nav_book_test,
+                R.id.nav_bill_estimate,
                 R.id.nav_my_bookings,
                 R.id.nav_my_reports,
-                R.id.nav_profile
+                R.id.nav_profile,
+                R.id.nav_manage_booking
             ), drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        // Post-booking modifications are admin-only: hide the entry point for everyone else.
+        navView.menu.findItem(R.id.nav_manage_booking)?.isVisible = SessionManager.isAdmin(this)
 
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.nav_logout) {

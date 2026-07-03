@@ -56,6 +56,7 @@ class LoginActivity : AppCompatActivity() {
                             response.userKey,
                             response.userid,
                             response.username,
+                            response.isAdmin,
                         )
                         openMain()
                     },
