@@ -37,6 +37,15 @@ def neon_url() -> str:
     return os.environ["NEON_DATABASE_URL"]
 
 
+def api_key() -> str:
+    """
+    Shared secret required in the X-API-Key header for /api/* requests.
+    Empty string disables the check (backward compatible with older deploys).
+    """
+    load_env()
+    return os.environ.get("AKTIV_API_KEY", "").strip()
+
+
 def aktiv_settings() -> dict:
     """AKTIV write behaviour — receptionist user, test vs live bookings."""
     load_env()

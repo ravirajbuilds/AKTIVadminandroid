@@ -9,8 +9,10 @@ class EmailManager {
 
     companion object {
         private const val TAG = "EmailManager"
-        private const val EMAIL_USER = "contact.anubhavlife@gmail.com"
-        private const val EMAIL_PASS = "bzzvtfogvirfujoc"
+        // Credentials must be injected from secure config (BuildConfig field / env),
+        // never hard-coded. Left blank here; this class currently only logs.
+        private const val EMAIL_USER = ""
+        private const val EMAIL_PASS = ""
         private const val CLINIC_EMAIL = "contact.anubhavlife@gmail.com"
     }
 

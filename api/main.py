@@ -1,11 +1,14 @@
 """REST API for AKTIV Admin Android app ↔ AKTIV."""
 from __future__ import annotations
 
+import hmac
+import logging
 from datetime import date
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from auth import authenticate
@@ -14,12 +17,15 @@ from aktiv_booking import (
     cancel_booking,
     list_collection_centres,
     list_reception_users,
-    next_bill_number,
+    next_bill_number_live,
     push_booking,
+    resolve_is_test,
     search_doctors,
     search_tests,
 )
-from config import aktiv_settings
+from config import aktiv_settings, api_key
+
+log = logging.getLogger("aktiv_api")
 
 app = FastAPI(title="AKTIV Admin API", version="1.2.0")
 app.add_middleware(
@@ -28,6 +34,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_API_KEY_WARNED = False
+
+
+@app.middleware("http")
+async def enforce_api_key(request: Request, call_next):
+    """
+    Require the shared secret on data endpoints when AKTIV_API_KEY is set.
+    Without it configured the API stays open (LAN-only) but logs a warning once,
+    so an unprotected deployment is visible in the logs.
+    """
+    path = request.url.path
+    protected = path.startswith("/api/")
+    if protected and request.method != "OPTIONS":
+        expected = api_key()
+        if expected:
+            provided = request.headers.get("x-api-key", "")
+            # Compare as bytes: hmac.compare_digest rejects non-ASCII str inputs,
+            # so a crafted header must not be able to raise instead of 401.
+            if not hmac.compare_digest(provided.encode("utf-8"), expected.encode("utf-8")):
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid or missing API key"},
+                )
+        else:
+            global _API_KEY_WARNED
+            if not _API_KEY_WARNED:
+                _API_KEY_WARNED = True
+                log.warning(
+                    "AKTIV_API_KEY is not set — /api endpoints are unauthenticated. "
+                    "Set AKTIV_API_KEY (and rebuild the app with a matching key) to secure them."
+                )
+    return await call_next(request)
 
 
 class BookingRequest(BaseModel):
@@ -111,9 +150,9 @@ def api_collection_centres(q: str = ""):
 @app.get("/api/next-bill-number")
 def api_next_bill_number(bill_date: Optional[date] = None, test_mode: Optional[bool] = None):
     settings = aktiv_settings()
-    is_test = test_mode if test_mode is not None else not settings["allow_live_bookings"]
+    is_test = resolve_is_test(test_mode, settings["allow_live_bookings"])
     effective_date = settings["test_bill_date"] if is_test else (bill_date or date.today())
-    return next_bill_number(effective_date)
+    return next_bill_number_live(effective_date)
 
 
 @app.post("/api/bookings")
@@ -144,7 +183,7 @@ def api_create_booking(body: BookingRequest):
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     settings = aktiv_settings()
-    is_test = body.test_mode if body.test_mode is not None else not settings["allow_live_bookings"]
+    is_test = resolve_is_test(body.test_mode, settings["allow_live_bookings"])
     return {
         "success": True,
         "bill_key": result.bill_key,

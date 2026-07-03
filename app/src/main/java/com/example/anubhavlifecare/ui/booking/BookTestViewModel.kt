@@ -13,6 +13,7 @@ import com.example.anubhavlifecare.data.model.AktivDoctor
 import com.example.anubhavlifecare.data.model.AktivTest
 import com.example.anubhavlifecare.data.repository.AktivRepository
 import com.example.anubhavlifecare.utils.SessionManager
+import com.example.anubhavlifecare.utils.toUserMessage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,6 +48,7 @@ class BookTestViewModel(
 
     private var doctorSearchJob: Job? = null
     private var testSearchJob: Job? = null
+    private var submitJob: Job? = null
 
     init {
         loadMasters()
@@ -127,6 +129,11 @@ class BookTestViewModel(
         chequeNo: String?,
         remarks: String?,
     ) {
+        // Guard against a rapid double-tap creating two bills: the submit button
+        // is only disabled once the loading state propagates to the observer, so
+        // reject a second call while one is already in flight.
+        if (submitJob?.isActive == true) return
+
         val current = _state.value ?: return
         val userKey = sysUserKey()
         if (userKey == null) {
@@ -137,6 +144,15 @@ class BookTestViewModel(
             _state.value = current.copy(error = "Name and phone are required")
             return
         }
+        // The backend requires at least 10 digits; validate here for a clear message.
+        if (phone.count { it.isDigit() } < 10) {
+            _state.value = current.copy(error = "Enter a valid phone number (at least 10 digits)")
+            return
+        }
+        if (ageYear != null && (ageYear < 0 || ageYear > 150)) {
+            _state.value = current.copy(error = "Enter a valid age")
+            return
+        }
         if (current.selectedTests.isEmpty()) {
             _state.value = current.copy(error = "Select at least one test")
             return
@@ -144,9 +160,13 @@ class BookTestViewModel(
 
         val isTest = current.testMode
         val upiCheque = if (receiptMode.equals("UPI", ignoreCase = true)) chequeNo else null
+        if (!isTest && amountPaid != null && amountPaid < 0) {
+            _state.value = current.copy(error = "Amount paid cannot be negative")
+            return
+        }
         val paid = if (isTest) 0.0 else (amountPaid ?: current.selectedTests.sumOf { it.rate })
 
-        viewModelScope.launch {
+        submitJob = viewModelScope.launch {
             _state.value = current.copy(isLoading = true, error = null, success = null)
             val result = aktivRepository.pushBookingToAktiv(
                 patientName = patientName.trim(),
@@ -175,7 +195,7 @@ class BookTestViewModel(
                 onFailure = { err ->
                     _state.value = _state.value?.copy(
                         isLoading = false,
-                        error = err.message ?: "Booking failed",
+                        error = err.toUserMessage(),
                     )
                 },
             )

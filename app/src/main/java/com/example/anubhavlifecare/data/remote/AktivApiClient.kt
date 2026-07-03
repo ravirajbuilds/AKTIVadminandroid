@@ -16,26 +16,60 @@ object AktivApiClient {
 
     private val gson = GsonBuilder().setLenient().create()
 
-    private val httpClient: OkHttpClient by lazy {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+    /** Read a String field from the generated BuildConfig, or null if absent. */
+    private fun buildConfigString(field: String): String? = try {
+        Class.forName("com.example.anubhavlifecare.BuildConfig")
+            .getField(field)
+            .get(null) as? String
+    } catch (_: Exception) {
+        null
+    }
+
+    private val isDebug: Boolean by lazy {
+        try {
+            Class.forName("com.example.anubhavlifecare.BuildConfig")
+                .getField("DEBUG")
+                .getBoolean(null)
+        } catch (_: Exception) {
+            false
         }
-        OkHttpClient.Builder()
+    }
+
+    private val apiKey: String by lazy { buildConfigString("AKTIV_API_KEY").orEmpty() }
+
+    private val httpClient: OkHttpClient by lazy {
+        val builder = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .addInterceptor(logging)
-            .build()
+
+        // Attach the shared secret when one is configured for this build.
+        val key = apiKey
+        if (key.isNotBlank()) {
+            builder.addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("X-API-Key", key)
+                    .build()
+                chain.proceed(request)
+            }
+        }
+
+        // Full request/response bodies contain patient PII and login credentials,
+        // so only log them in debug builds — never in a release APK.
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (isDebug) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+        builder.addInterceptor(logging)
+
+        builder.build()
     }
 
     val api: AktivApi by lazy {
-        val baseUrl = try {
-            val field = Class.forName("com.example.anubhavlifecare.BuildConfig")
-                .getField("AKTIV_API_URL")
-            field.get(null) as String
-        } catch (_: Exception) {
-            DEFAULT_BASE_URL
-        }
+        val baseUrl = buildConfigString("AKTIV_API_URL") ?: DEFAULT_BASE_URL
 
         Retrofit.Builder()
             .baseUrl(baseUrl.ensureTrailingSlash())

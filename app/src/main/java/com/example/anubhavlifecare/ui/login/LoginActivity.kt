@@ -11,6 +11,7 @@ import com.example.anubhavlifecare.MainActivity
 import com.example.anubhavlifecare.R
 import com.example.anubhavlifecare.data.repository.AktivRepository
 import com.example.anubhavlifecare.utils.SessionManager
+import com.example.anubhavlifecare.utils.toUserMessage
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
@@ -51,18 +52,26 @@ class LoginActivity : AppCompatActivity() {
 
                 result.fold(
                     onSuccess = { response ->
-                        SessionManager.save(
-                            this@LoginActivity,
-                            response.userKey,
-                            response.userid,
-                            response.username,
-                        )
-                        openMain()
+                        if (response.success) {
+                            SessionManager.save(
+                                this@LoginActivity,
+                                response.userKey,
+                                response.userid,
+                                response.username,
+                            )
+                            openMain()
+                        } else {
+                            Toast.makeText(
+                                this@LoginActivity,
+                                R.string.login_failed,
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
                     },
                     onFailure = { err ->
                         Toast.makeText(
                             this@LoginActivity,
-                            err.message ?: getString(R.string.login_failed),
+                            err.toUserMessage(),
                             Toast.LENGTH_LONG,
                         ).show()
                     },

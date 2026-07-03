@@ -60,8 +60,8 @@ RAZORPAY_KEY_ID = "rzp_live_RFl7SbGT4LwcLq"
 RAZORPAY_KEY_SECRET = "your_razorpay_secret"
 
 // Email Configuration
-EMAIL_USER = "contact.anubhavlife@gmail.com"
-EMAIL_PASS = "bzzvtfogvirfujoc"
+EMAIL_USER = "your_email@example.com"
+EMAIL_PASS = "your_email_app_password"
 ```
 
 ### Contact Information
