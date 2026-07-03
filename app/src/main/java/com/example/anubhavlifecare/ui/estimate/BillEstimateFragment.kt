@@ -10,18 +10,21 @@ import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.anubhavlifecare.R
 import com.example.anubhavlifecare.data.model.AktivTest
-import com.example.anubhavlifecare.utils.EstimateShareManager
-import com.example.anubhavlifecare.utils.EstimateShareManager.formatAmount
 import com.example.anubhavlifecare.utils.EstimateData
 import com.example.anubhavlifecare.utils.EstimateLine
+import com.example.anubhavlifecare.utils.EstimateShareManager
+import com.example.anubhavlifecare.utils.EstimateShareManager.formatAmount
+import com.example.anubhavlifecare.utils.LanguageManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,16 +33,13 @@ class BillEstimateFragment : Fragment() {
     private lateinit var viewModel: BillEstimateViewModel
     private lateinit var searchAdapter: EstimateSearchAdapter
     private lateinit var selectedAdapter: EstimateSelectedAdapter
+    private lateinit var languageManager: LanguageManager
 
     private lateinit var etName: TextInputEditText
     private lateinit var etPhone: TextInputEditText
     private lateinit var etDiscount: TextInputEditText
     private lateinit var spinnerDiscountType: AutoCompleteTextView
     private lateinit var tvSummary: TextView
-    private lateinit var tvEmpty: TextView
-
-    private val flatOption get() = getString(R.string.estimate_discount_flat)
-    private val percentOption get() = getString(R.string.estimate_discount_percent)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -49,6 +49,7 @@ class BillEstimateFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        languageManager = LanguageManager(requireContext())
         viewModel = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application),
@@ -59,21 +60,13 @@ class BillEstimateFragment : Fragment() {
         etDiscount = view.findViewById(R.id.etEstimateDiscount)
         spinnerDiscountType = view.findViewById(R.id.spinnerDiscountType)
         tvSummary = view.findViewById(R.id.tvEstimateSummary)
-        tvEmpty = view.findViewById(R.id.tvEstimateEmpty)
         val etSearch = view.findViewById<TextInputEditText>(R.id.etEstimateSearch)
         val rvSearch = view.findViewById<RecyclerView>(R.id.rvEstimateSearch)
         val rvSelected = view.findViewById<RecyclerView>(R.id.rvEstimateSelected)
         val btnShareImage = view.findViewById<MaterialButton>(R.id.btnShareImage)
         val btnShareText = view.findViewById<MaterialButton>(R.id.btnShareText)
 
-        spinnerDiscountType.setAdapter(
-            ArrayAdapter(
-                requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
-                listOf(flatOption, percentOption),
-            ),
-        )
-        spinnerDiscountType.setText(flatOption, false)
+        applyLanguage(view)
         spinnerDiscountType.setOnItemClickListener { _, _, _, _ -> refreshSummary() }
 
         searchAdapter = EstimateSearchAdapter { test -> viewModel.toggleTest(test) }
@@ -90,20 +83,21 @@ class BillEstimateFragment : Fragment() {
         btnShareImage.setOnClickListener {
             val estimate = buildEstimate() ?: return@setOnClickListener
             if (!EstimateShareManager.shareAsImage(requireContext(), estimate)) {
-                Toast.makeText(requireContext(), R.string.estimate_no_app, Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), tr(R.string.estimate_no_app, R.string.estimate_no_app_bn), Toast.LENGTH_LONG).show()
             }
         }
         btnShareText.setOnClickListener {
             val estimate = buildEstimate() ?: return@setOnClickListener
             if (!EstimateShareManager.shareAsText(requireContext(), estimate)) {
-                Toast.makeText(requireContext(), R.string.estimate_no_app, Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), tr(R.string.estimate_no_app, R.string.estimate_no_app_bn), Toast.LENGTH_LONG).show()
             }
         }
 
         viewModel.state.observe(viewLifecycleOwner) { state ->
             searchAdapter.submit(state.tests, state.selectedTests)
             selectedAdapter.submit(state.selectedTests)
-            tvEmpty.visibility = if (state.selectedTests.isEmpty()) View.VISIBLE else View.GONE
+            view.findViewById<TextView>(R.id.tvEstimateEmpty).visibility =
+                if (state.selectedTests.isEmpty()) View.VISIBLE else View.GONE
             refreshSummary()
             state.error?.let { msg ->
                 Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
@@ -112,42 +106,64 @@ class BillEstimateFragment : Fragment() {
         }
     }
 
-    /** Build the estimate from the current selection, or show a toast and return null if empty. */
+    private fun applyLanguage(view: View) {
+        view.findViewById<TextView>(R.id.tvEstimateTitle).text =
+            tr(R.string.estimate_title, R.string.estimate_title_bn)
+        view.findViewById<TextView>(R.id.tvEstimateSubtitle).text =
+            tr(R.string.estimate_subtitle, R.string.estimate_subtitle_bn)
+        view.findViewById<TextView>(R.id.tvEstimateSelectedLabel).text =
+            tr(R.string.estimate_selected_tests, R.string.estimate_selected_tests_bn)
+        view.findViewById<TextView>(R.id.tvEstimateEmpty).text =
+            tr(R.string.estimate_empty, R.string.estimate_empty_bn)
+        view.findViewById<TextInputLayout>(R.id.tilEstimateName).hint =
+            tr(R.string.estimate_patient_name, R.string.estimate_patient_name_bn)
+        view.findViewById<TextInputLayout>(R.id.tilEstimatePhone).hint =
+            tr(R.string.estimate_phone, R.string.estimate_phone_bn)
+        view.findViewById<TextInputLayout>(R.id.tilEstimateSearch).hint =
+            tr(R.string.estimate_search_tests, R.string.estimate_search_tests_bn)
+        view.findViewById<TextInputLayout>(R.id.tilEstimateDiscount).hint =
+            tr(R.string.estimate_discount, R.string.estimate_discount_bn)
+        view.findViewById<TextInputLayout>(R.id.tilEstimateDiscountType).hint =
+            tr(R.string.estimate_discount_type, R.string.estimate_discount_type_bn)
+        view.findViewById<MaterialButton>(R.id.btnShareImage).text =
+            tr(R.string.estimate_share_photo, R.string.estimate_share_photo_bn)
+        view.findViewById<MaterialButton>(R.id.btnShareText).text =
+            tr(R.string.estimate_share_text, R.string.estimate_share_text_bn)
+
+        val options = listOf(
+            tr(R.string.estimate_discount_flat, R.string.estimate_discount_flat_bn),
+            tr(R.string.estimate_discount_percent, R.string.estimate_discount_percent_bn),
+        )
+        spinnerDiscountType.setAdapter(
+            ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, options),
+        )
+        val current = spinnerDiscountType.text?.toString()
+        if (current.isNullOrBlank() || options.none { it == current }) {
+            spinnerDiscountType.setText(options.first(), false)
+        }
+    }
+
+    /** Build the estimate from the current selection, or toast + return null if empty. */
     private fun buildEstimate(): EstimateData? {
-        val selected = viewModel.state.value?.selectedTests.orEmpty()
-        if (selected.isEmpty()) {
-            Toast.makeText(requireContext(), R.string.estimate_need_test, Toast.LENGTH_SHORT).show()
+        if (viewModel.state.value?.selectedTests.isNullOrEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                tr(R.string.estimate_need_test, R.string.estimate_need_test_bn),
+                Toast.LENGTH_SHORT,
+            ).show()
             return null
         }
-        val subtotal = selected.sumOf { it.rate }
-        val discountValue = etDiscount.text?.toString()?.toDoubleOrNull() ?: 0.0
-        val isPercent = spinnerDiscountType.text?.toString() == percentOption
-        val discountAmount = (if (isPercent) subtotal * discountValue / 100.0 else discountValue)
-            .coerceIn(0.0, subtotal)
-        val discountLabel = if (isPercent && discountValue > 0) {
-            "Discount (${formatAmount(discountValue)}%)"
-        } else {
-            "Discount"
-        }
-        val total = (subtotal - discountAmount).coerceAtLeast(0.0)
-        val dateText = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-
-        return EstimateData(
+        return computeEstimate(
             patientName = etName.text?.toString()?.trim().orEmpty(),
             phone = etPhone.text?.toString()?.trim().orEmpty(),
-            dateText = dateText,
-            lines = selected.map { EstimateLine(it.testName, it.rate) },
-            subtotal = subtotal,
-            discountLabel = discountLabel,
-            discountAmount = discountAmount,
-            total = total,
+            dateText = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date()),
         )
     }
 
     private fun refreshSummary() {
-        val estimate = buildEstimateForPreview()
+        val estimate = computeEstimate(patientName = "", phone = "", dateText = "")
         if (estimate == null) {
-            tvSummary.text = getString(R.string.estimate_empty)
+            tvSummary.text = tr(R.string.estimate_empty, R.string.estimate_empty_bn)
             return
         }
         tvSummary.text = buildString {
@@ -159,13 +175,13 @@ class BillEstimateFragment : Fragment() {
         }
     }
 
-    /** Same maths as [buildEstimate] but silent — used to refresh the on-screen summary. */
-    private fun buildEstimateForPreview(): EstimateData? {
+    /** Shared estimate maths for both the preview and the share payload. */
+    private fun computeEstimate(patientName: String, phone: String, dateText: String): EstimateData? {
         val selected = viewModel.state.value?.selectedTests.orEmpty()
         if (selected.isEmpty()) return null
         val subtotal = selected.sumOf { it.rate }
         val discountValue = etDiscount.text?.toString()?.toDoubleOrNull() ?: 0.0
-        val isPercent = spinnerDiscountType.text?.toString() == percentOption
+        val isPercent = spinnerDiscountType.text?.toString()?.contains("%") == true
         val discountAmount = (if (isPercent) subtotal * discountValue / 100.0 else discountValue)
             .coerceIn(0.0, subtotal)
         val discountLabel = if (isPercent && discountValue > 0) {
@@ -173,18 +189,20 @@ class BillEstimateFragment : Fragment() {
         } else {
             "Discount"
         }
-        val total = (subtotal - discountAmount).coerceAtLeast(0.0)
         return EstimateData(
-            patientName = "",
-            phone = "",
-            dateText = "",
+            patientName = patientName,
+            phone = phone,
+            dateText = dateText,
             lines = selected.map { EstimateLine(it.testName, it.rate) },
             subtotal = subtotal,
             discountLabel = discountLabel,
             discountAmount = discountAmount,
-            total = total,
+            total = (subtotal - discountAmount).coerceAtLeast(0.0),
         )
     }
+
+    private fun tr(@StringRes en: Int, @StringRes bn: Int): String =
+        languageManager.getString(requireContext(), en, bn)
 
     private fun simpleWatcher(onChange: (String) -> Unit) = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit

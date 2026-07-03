@@ -64,6 +64,8 @@ class MainActivity : AppCompatActivity() {
         // Post-booking modifications are admin-only: hide the entry point for everyone else.
         navView.menu.findItem(R.id.nav_manage_booking)?.isVisible = SessionManager.isAdmin(this)
 
+        localizeDrawerMenu()
+
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.nav_logout) {
                 SessionManager.clear(this)
@@ -78,6 +80,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateNavigationHeader()
+    }
+
+    private fun localizeDrawerMenu() {
+        val bengali = languageManager.isBengali()
+        val menu = binding.navView.menu
+        fun apply(id: Int, en: Int, bn: Int) {
+            menu.findItem(id)?.title = getString(if (bengali) bn else en)
+        }
+        apply(R.id.nav_home, R.string.menu_home, R.string.menu_home_bn)
+        apply(R.id.nav_book_test, R.string.menu_book_test, R.string.menu_book_test_bn)
+        apply(R.id.nav_bill_estimate, R.string.menu_bill_estimate, R.string.menu_bill_estimate_bn)
+        apply(R.id.nav_my_bookings, R.string.menu_my_bookings, R.string.menu_my_bookings_bn)
+        apply(R.id.nav_my_reports, R.string.menu_my_reports, R.string.menu_my_reports_bn)
+        apply(R.id.nav_profile, R.string.menu_profile, R.string.menu_profile_bn)
+        apply(R.id.nav_manage_booking, R.string.menu_manage_booking, R.string.menu_manage_booking_bn)
+        apply(R.id.nav_logout, R.string.logout, R.string.logout_bn)
     }
 
     private fun setupFabButtons() {

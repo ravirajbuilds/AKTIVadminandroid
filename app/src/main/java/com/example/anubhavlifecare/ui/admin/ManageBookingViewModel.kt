@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.anubhavlifecare.R
 import com.example.anubhavlifecare.data.repository.AktivRepository
+import com.example.anubhavlifecare.utils.LanguageManager
 import com.example.anubhavlifecare.utils.SessionManager
 import kotlinx.coroutines.launch
 
@@ -29,8 +30,11 @@ class ManageBookingViewModel(
 
     fun cancelBooking(billKey: Int) {
         val app = getApplication<Application>()
+        val lang = LanguageManager(app)
         if (!SessionManager.isAdmin(app)) {
-            _state.value = ManageBookingUiState(error = app.getString(R.string.manage_no_permission))
+            _state.value = ManageBookingUiState(
+                error = lang.getString(app, R.string.manage_no_permission, R.string.manage_no_permission_bn),
+            )
             return
         }
         viewModelScope.launch {
@@ -39,7 +43,11 @@ class ManageBookingViewModel(
             aktivRepository.cancelBooking(billKey, userKey).fold(
                 onSuccess = {
                     _state.value = ManageBookingUiState(
-                        message = app.getString(R.string.manage_cancel_success, billKey.toString()),
+                        message = if (lang.isBengali()) {
+                            app.getString(R.string.manage_cancel_success_bn, billKey.toString())
+                        } else {
+                            app.getString(R.string.manage_cancel_success, billKey.toString())
+                        },
                     )
                 },
                 onFailure = { err ->

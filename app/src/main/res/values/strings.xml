@@ -201,6 +201,7 @@
     <string name="menu_profile_bn">প্রোফাইল</string>
     <string name="menu_contact_bn">যোগাযোগ</string>
     <string name="menu_about_bn">সম্পর্কে</string>
+    <string name="logout_bn">লগআউট</string>
 
     <!-- Navigation Header Bengali -->
     <string name="nav_header_title_bn">AKTIV Admin</string>
@@ -214,4 +215,32 @@
     <string name="error_bn">ত্রুটি</string>
     <string name="success_bn">সফল</string>
     <string name="retry_bn">পুনরায় চেষ্টা করুন</string>
+
+    <!-- Bill Estimate Bengali -->
+    <string name="menu_bill_estimate_bn">বিল অনুমান</string>
+    <string name="menu_manage_booking_bn">বুকিং পরিচালনা (অ্যাডমিন)</string>
+    <string name="estimate_title_bn">বিল অনুমান</string>
+    <string name="estimate_subtitle_bn">টেস্ট যোগ করুন, ছাড় প্রয়োগ করুন এবং মোট পরিমাণ হোয়াটসঅ্যাপে ছবি বা টেক্সট হিসেবে পাঠান। এটি কোনো AKTIV বিল তৈরি করে না।</string>
+    <string name="estimate_patient_name_bn">রোগীর নাম (ঐচ্ছিক)</string>
+    <string name="estimate_phone_bn">হোয়াটসঅ্যাপ নম্বর (ঐচ্ছিক)</string>
+    <string name="estimate_search_tests_bn">যোগ করতে টেস্ট খুঁজুন</string>
+    <string name="estimate_selected_tests_bn">নির্বাচিত টেস্ট</string>
+    <string name="estimate_empty_bn">এখনও কোন টেস্ট যোগ করা হয়নি। যোগ করতে উপরে একটি টেস্টে ট্যাপ করুন।</string>
+    <string name="estimate_discount_bn">ছাড়</string>
+    <string name="estimate_discount_type_bn">ধরন</string>
+    <string name="estimate_discount_flat_bn">নির্দিষ্ট (₹)</string>
+    <string name="estimate_discount_percent_bn">শতাংশ (%)</string>
+    <string name="estimate_share_photo_bn">ছবি হিসেবে পাঠান (হোয়াটসঅ্যাপ)</string>
+    <string name="estimate_share_text_bn">টেক্সট হিসেবে পাঠান (হোয়াটসঅ্যাপ)</string>
+    <string name="estimate_no_app_bn">হোয়াটসঅ্যাপ বা শেয়ার অ্যাপ খোলা যায়নি।</string>
+    <string name="estimate_need_test_bn">প্রথমে অন্তত একটি টেস্ট যোগ করুন।</string>
+
+    <!-- Manage Booking (Admin) Bengali -->
+    <string name="manage_title_bn">বুকিং পরিচালনা</string>
+    <string name="manage_subtitle_bn">শুধুমাত্র অ্যাডমিন: বুকিং তৈরি হওয়ার পরে বাতিল করুন। এটি বিল না মুছে AKTIV-এ রসিদের পরিমাণ শূন্য করে দেয়।</string>
+    <string name="manage_bill_key_bn">বিল কী (AKTIV bill_key)</string>
+    <string name="manage_cancel_button_bn">বুকিং বাতিল করুন</string>
+    <string name="manage_no_permission_bn">বুকিং হওয়ার পরে শুধুমাত্র অ্যাডমিন ব্যবহারকারীরা এটি পরিবর্তন করতে পারেন।</string>
+    <string name="manage_need_bill_key_bn">একটি বৈধ বিল কী লিখুন।</string>
+    <string name="manage_cancel_success_bn">বুকিং %1$s সফলভাবে বাতিল করা হয়েছে।</string>
 </resources>

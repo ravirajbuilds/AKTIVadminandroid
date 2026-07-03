@@ -7,15 +7,19 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.anubhavlifecare.R
+import com.example.anubhavlifecare.utils.LanguageManager
 import com.example.anubhavlifecare.utils.SessionManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 
 class ManageBookingFragment : Fragment() {
     private lateinit var viewModel: ManageBookingViewModel
+    private lateinit var languageManager: LanguageManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -25,6 +29,7 @@ class ManageBookingFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        languageManager = LanguageManager(requireContext())
         viewModel = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application),
@@ -34,6 +39,8 @@ class ManageBookingFragment : Fragment() {
         val etBillKey = view.findViewById<TextInputEditText>(R.id.etBillKey)
         val btnCancel = view.findViewById<MaterialButton>(R.id.btnCancelBooking)
         val progress = view.findViewById<ProgressBar>(R.id.progressManage)
+
+        applyLanguage(view)
 
         val isAdmin = SessionManager.isAdmin(requireContext())
         if (!isAdmin) {
@@ -45,8 +52,11 @@ class ManageBookingFragment : Fragment() {
         btnCancel.setOnClickListener {
             val billKey = etBillKey.text?.toString()?.trim()?.toIntOrNull()
             if (billKey == null) {
-                Toast.makeText(requireContext(), R.string.manage_need_bill_key, Toast.LENGTH_SHORT)
-                    .show()
+                Toast.makeText(
+                    requireContext(),
+                    tr(R.string.manage_need_bill_key, R.string.manage_need_bill_key_bn),
+                    Toast.LENGTH_SHORT,
+                ).show()
                 return@setOnClickListener
             }
             viewModel.cancelBooking(billKey)
@@ -66,4 +76,20 @@ class ManageBookingFragment : Fragment() {
             }
         }
     }
+
+    private fun applyLanguage(view: View) {
+        view.findViewById<TextView>(R.id.tvManageTitle).text =
+            tr(R.string.manage_title, R.string.manage_title_bn)
+        view.findViewById<TextView>(R.id.tvManageSubtitle).text =
+            tr(R.string.manage_subtitle, R.string.manage_subtitle_bn)
+        view.findViewById<TextView>(R.id.tvManageWarning).text =
+            tr(R.string.manage_no_permission, R.string.manage_no_permission_bn)
+        view.findViewById<TextInputLayout>(R.id.tilBillKey).hint =
+            tr(R.string.manage_bill_key, R.string.manage_bill_key_bn)
+        view.findViewById<MaterialButton>(R.id.btnCancelBooking).text =
+            tr(R.string.manage_cancel_button, R.string.manage_cancel_button_bn)
+    }
+
+    private fun tr(@StringRes en: Int, @StringRes bn: Int): String =
+        languageManager.getString(requireContext(), en, bn)
 }

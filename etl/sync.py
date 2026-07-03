@@ -60,6 +60,37 @@ def pg_table_name(mssql_table: str) -> str:
     return mssql_table.lower()
 
 
+# Users are mirrored so the API can validate logins and admin rights off-LAN
+# (from Neon) when the AKTIV SQL Server is unreachable. Only the columns the API
+# needs are copied. The table is created on first run if it does not exist.
+USERS_DDL = """
+CREATE TABLE IF NOT EXISTS sys_mast_users (
+    user_key INTEGER PRIMARY KEY,
+    userid TEXT,
+    username TEXT,
+    userpassword TEXT,
+    flg_system INTEGER
+)
+"""
+
+
+def sync_users(mssql_cur, pg_cur) -> int:
+    pg_cur.execute(USERS_DDL)
+    mssql_cur.execute(
+        "SELECT user_key, userid, username, userpassword, flg_system FROM SYS_MAST_USERS"
+    )
+    rows = mssql_cur.fetchall()
+    pg_cur.execute("TRUNCATE TABLE sys_mast_users")
+    insert_sql = (
+        "INSERT INTO sys_mast_users "
+        "(user_key, userid, username, userpassword, flg_system) "
+        "VALUES (%s, %s, %s, %s, %s)"
+    )
+    for row in rows:
+        pg_cur.execute(insert_sql, row)
+    return len(rows)
+
+
 def sync_table(mssql_cur, pg_cur, table: str) -> int:
     mssql_cur.execute(f"SELECT * FROM {table}")
     rows = mssql_cur.fetchall()
@@ -118,7 +149,8 @@ def main() -> int:
     log.info("Neon connected.")
 
     started = time.time()
-    log.info("sync started: %d table(s)", len(TABLES))
+    expected = len(TABLES) + 1  # + SYS_MAST_USERS
+    log.info("sync started: %d table(s)", expected)
     ok = 0
     total_rows = 0
 
@@ -136,18 +168,30 @@ def main() -> int:
             pg.rollback()
             log.error("  %-24s FAILED: %s", table, exc)
 
+    # Users mirror (login + admin fallback). Counted alongside the tables above.
+    t0 = time.time()
+    try:
+        count = sync_users(mssql_cur, pg_cur)
+        pg.commit()
+        ok += 1
+        total_rows += count
+        log.info("  %-24s %7d rows  (%.1fs)", "SYS_MAST_USERS", count, time.time() - t0)
+    except Exception as exc:
+        pg.rollback()
+        log.error("  %-24s FAILED: %s", "SYS_MAST_USERS", exc)
+
     mssql.close()
     pg.close()
     elapsed = time.time() - started
     log.info(
         "sync %s: %d/%d tables, %d rows, %.1fs",
-        "success" if ok == len(TABLES) else "partial",
+        "success" if ok == expected else "partial",
         ok,
-        len(TABLES),
+        expected,
         total_rows,
         elapsed,
     )
-    return 0 if ok == len(TABLES) else 1
+    return 0 if ok == expected else 1
 
 
 if __name__ == "__main__":
