@@ -1,12 +1,15 @@
 """Push patient bookings into AKTIV MSSQL (BILL_HEAD + details + APNT_HEAD)."""
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
 
 from db import fetch_all, fetch_one, mssql_conn, neon_conn
 from config import aktiv_settings
+
+log = logging.getLogger("aktiv_booking")
 
 DEFAULT_COLL_CENTRE_KEY = 1  # ANUBHAV LIFE CARE
 DEFAULT_COLL_CENTRE_NAME = "ANUBHAV LIFE CARE"
@@ -38,6 +41,22 @@ class BookingResult:
     net_amount: float
 
 
+def resolve_is_test(test_mode: bool | None, allow_live: bool) -> bool:
+    """
+    Whether this booking is a (safe, zero-value) TEST bill.
+
+    ``allow_live`` (AKTIV_ALLOW_LIVE_BOOKINGS) is the hard safety gate: a real
+    live bill requires the switch ON *and* the client not asking for test mode.
+    A client can only ever make a booking safer (force test) — it can never
+    force a live bill when the server says it isn't ready. This prevents a
+    release build (which sends test_mode=False) from writing live bills before
+    the clinic flips the switch.
+    """
+    if not allow_live:
+        return True
+    return bool(test_mode)
+
+
 def list_reception_users() -> list[dict[str, Any]]:
     """
     Receptionist accounts from SYS_MAST_USERS.
@@ -65,7 +84,7 @@ def _resolve_booking_context(
 ) -> tuple[date, date, int, int, bool, float]:
     """Return bill_date, apnt_date, sys_user_key, sys_machine_key, is_test, deduction."""
     settings = aktiv_settings()
-    is_test = test_mode if test_mode is not None else not settings["allow_live_bookings"]
+    is_test = resolve_is_test(test_mode, settings["allow_live_bookings"])
 
     if is_test:
         bill_date = settings["test_bill_date"]
@@ -148,8 +167,23 @@ def _year_prefix(d: date) -> str:
     return f"{d.year % 100:02d}"
 
 
+def _format_bill_number(prefix1: str, next_no: int) -> dict[str, str]:
+    bill_number = f"{next_no:03d}"
+    return {
+        "bill_prefix1": prefix1,
+        "bill_prefix2": BILL_PREFIX2,
+        "bill_number": bill_number,
+        "bill_no": f"{prefix1}/{BILL_PREFIX2}/{bill_number}",
+    }
+
+
 def next_bill_number(bill_date: date | None = None) -> dict[str, str]:
-    """Next sequential bill number for the month (resets to 001 on the 1st)."""
+    """
+    Next sequential bill number for the month from the Neon mirror.
+    Neon only reflects the last ETL sync, so this is an ESTIMATE suitable for
+    display/fallback — never number an actual bill against it. Use
+    ``_next_bill_number_mssql`` inside the write transaction for the real number.
+    """
     bill_date = bill_date or date.today()
     prefix1 = _bill_prefix1(bill_date)
 
@@ -165,15 +199,44 @@ def next_bill_number(bill_date: date | None = None) -> dict[str, str]:
             (prefix1, BILL_PREFIX2),
         )
         max_no = int(row["max_no"] or 0)
-        next_no = max_no + 1
 
-    bill_number = f"{next_no:03d}"
-    return {
-        "bill_prefix1": prefix1,
-        "bill_prefix2": BILL_PREFIX2,
-        "bill_number": bill_number,
-        "bill_no": f"{prefix1}/{BILL_PREFIX2}/{bill_number}",
-    }
+    return _format_bill_number(prefix1, max_no + 1)
+
+
+def _next_bill_number_mssql(cur, bill_date: date) -> dict[str, str]:
+    """
+    Next sequential bill number from the AKTIV MSSQL source of truth.
+    Must run on the same cursor/transaction as the bill insert: the Neon mirror
+    is too stale to number against (two bookings between ETL syncs would collide).
+    """
+    prefix1 = _bill_prefix1(bill_date)
+    cur.execute(
+        """
+        SELECT ISNULL(MAX(CAST(bill_number AS INT)), 0)
+        FROM BILL_HEAD
+        WHERE bill_prefix1 = %s AND bill_prefix2 = %s
+          AND ISNUMERIC(bill_number) = 1
+        """,
+        (prefix1, BILL_PREFIX2),
+    )
+    max_no = int(cur.fetchone()[0] or 0)
+    return _format_bill_number(prefix1, max_no + 1)
+
+
+def next_bill_number_live(bill_date: date | None = None) -> dict[str, str]:
+    """
+    Bill-number prefill for the app, read from MSSQL so the displayed estimate
+    matches what will actually be written. Falls back to the Neon mirror only if
+    MSSQL is momentarily unreachable, so the screen still shows something.
+    """
+    bill_date = bill_date or date.today()
+    try:
+        with mssql_conn() as conn:
+            cur = conn.cursor()
+            return _next_bill_number_mssql(cur, bill_date)
+    except Exception as exc:  # noqa: BLE001 - display estimate only
+        log.warning("next_bill_number_live: MSSQL unavailable, using Neon mirror: %s", exc)
+        return next_bill_number(bill_date)
 
 
 def search_tests(query: str = "", limit: int = 50) -> list[dict[str, Any]]:
@@ -422,15 +485,14 @@ def push_booking(
     if receipt_mode.upper() != "UPI":
         cheque_no = None
 
-    bill_info = next_bill_number(bill_date)
-    if bill_number:
-        bill_info["bill_number"] = bill_number.zfill(3)
-        bill_info["bill_no"] = (
-            f"{bill_info['bill_prefix1']}/{bill_info['bill_prefix2']}/{bill_info['bill_number']}"
-        )
-
     with mssql_conn() as conn:
         cur = conn.cursor()
+
+        # Number the bill from MSSQL (source of truth) inside the transaction.
+        # The client-supplied ``bill_number`` is only a stale display prefill from
+        # the Neon mirror, so honouring it would let two bookings collide — it is
+        # intentionally ignored in favour of the authoritative value here.
+        bill_info = _next_bill_number_mssql(cur, bill_date)
 
         regt_key, regt_no = _find_or_create_patient(
             cur,

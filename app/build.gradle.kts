@@ -22,19 +22,33 @@ android {
     }
 
     buildTypes {
+        // Optional shared secret sent as the X-API-Key header. Injected at build
+        // time from a Gradle property (-PAKTIV_API_KEY=...) or the AKTIV_API_KEY
+        // env var so it never has to be committed. Empty means "no key" and the
+        // backend leaves auth disabled for backward compatibility.
+        val aktivApiKey = (project.findProperty("AKTIV_API_KEY") as String?)
+            ?: System.getenv("AKTIV_API_KEY")
+            ?: ""
+        // Backend base URL, overridable the same way for different clinic LANs.
+        val aktivApiUrl = (project.findProperty("AKTIV_API_URL") as String?)
+            ?: System.getenv("AKTIV_API_URL")
+            ?: "http://192.168.29.157:8080/"
+
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "AKTIV_API_URL", "\"http://192.168.29.157:8080/\"")
+            buildConfigField("String", "AKTIV_API_URL", "\"$aktivApiUrl\"")
+            buildConfigField("String", "AKTIV_API_KEY", "\"$aktivApiKey\"")
         }
         debug {
             buildConfigField("String", "SUPABASE_URL", "\"https://frkttphmaxuafxulvrkc.supabase.co\"")
             buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZya3R0cGhtYXh1YWZ4dWx2cmtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0NzY1MTAsImV4cCI6MjA3MzA1MjUxMH0.enRId4aQazHLOWZKyqT84jAic5F4JnxGOwZWRqAiMQU\"")
             buildConfigField("String", "RAZORPAY_KEY_ID", "\"rzp_live_RFl7SbGT4LwcLq\"")
-            buildConfigField("String", "AKTIV_API_URL", "\"http://192.168.29.157:8080/\"")
+            buildConfigField("String", "AKTIV_API_URL", "\"$aktivApiUrl\"")
+            buildConfigField("String", "AKTIV_API_KEY", "\"$aktivApiKey\"")
         }
     }
 
