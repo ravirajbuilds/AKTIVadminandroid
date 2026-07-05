@@ -1,5 +1,6 @@
 package com.example.anubhavlifecare.data.repository
 
+import com.example.anubhavlifecare.data.model.AktivLoginRequest
 import com.example.anubhavlifecare.data.model.AktivLoginResponse
 import com.example.anubhavlifecare.data.model.AktivBillNumber
 import com.example.anubhavlifecare.data.model.AktivBookingRequest
