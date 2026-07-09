@@ -12,7 +12,37 @@ data class AktivLoginResponse(
     @SerializedName("user_key") val userKey: Int,
     val userid: String,
     val username: String,
+    val role: String = "staff",
+    val permissions: UserPermissions? = null,
 )
+
+/** AKTIV role capabilities (SYS_MAST_ROLE) — drives booking-mode + sales UI gating. */
+data class UserPermissions(
+    val roles: List<String> = emptyList(),
+    @SerializedName("is_admin") val isAdmin: Boolean = false,
+    @SerializedName("can_view_sales") val canViewSales: Boolean = false,
+    @SerializedName("can_book") val canBook: Boolean = false,
+    @SerializedName("can_edit_booking") val canEditBooking: Boolean = false,
+    @SerializedName("can_cancel_booking") val canCancelBooking: Boolean = false,
+    @SerializedName("can_confirm_report") val canConfirmReport: Boolean = false,
+    @SerializedName("can_export_reports") val canExportReports: Boolean = false,
+    @SerializedName("modification_days") val modificationDays: Int = 0,
+    @SerializedName("accountview_days") val accountViewDays: Int = 0,
+)
+
+// ---- Sales analytics (gated by canViewSales) ----
+data class SalesSummary(
+    val from: String? = null, val to: String? = null,
+    val revenue: Double = 0.0, val bills: Int = 0,
+    val pending: Double = 0.0, val patients: Int = 0,
+    @SerializedName("avg_bill") val avgBill: Double = 0.0,
+)
+data class DayRevenue(val day: String, val revenue: Double = 0.0, val bills: Int = 0)
+data class CategoryRevenue(val category: String, val revenue: Double = 0.0, val orders: Int = 0)
+data class DoctorRevenue(val doctor: String, val revenue: Double = 0.0, val bills: Int = 0)
+data class CentreRevenue(val centre: String, val revenue: Double = 0.0)
+data class YoyPoint(val year: Int = 0, val month: Int = 0, val revenue: Double = 0.0)
+data class YoyResponse(val years: List<Int> = emptyList(), val points: List<YoyPoint> = emptyList())
 
 data class AktivTest(
     @SerializedName("test_key") val testKey: Int,

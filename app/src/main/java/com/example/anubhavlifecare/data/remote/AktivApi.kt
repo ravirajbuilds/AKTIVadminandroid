@@ -9,6 +9,12 @@ import com.example.anubhavlifecare.data.model.AktivCollectionCentre
 import com.example.anubhavlifecare.data.model.AktivDoctor
 import com.example.anubhavlifecare.data.model.AktivReceptionUser
 import com.example.anubhavlifecare.data.model.AktivTest
+import com.example.anubhavlifecare.data.model.CategoryRevenue
+import com.example.anubhavlifecare.data.model.CentreRevenue
+import com.example.anubhavlifecare.data.model.DayRevenue
+import com.example.anubhavlifecare.data.model.DoctorRevenue
+import com.example.anubhavlifecare.data.model.SalesSummary
+import com.example.anubhavlifecare.data.model.YoyResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -53,4 +59,23 @@ interface AktivApi {
         @Path("billKey") billKey: Int,
         @Body body: Map<String, Int?> = emptyMap(),
     ): Map<String, Any>
+
+    // ---- Sales analytics (server 403s if the user_key lacks can_view_sales) ----
+    @GET("api/analytics/summary")
+    suspend fun salesSummary(@Query("user_key") userKey: Int, @Query("date_from") from: String? = null, @Query("date_to") to: String? = null): SalesSummary
+
+    @GET("api/analytics/by-day")
+    suspend fun salesByDay(@Query("user_key") userKey: Int, @Query("date_from") from: String? = null, @Query("date_to") to: String? = null): List<DayRevenue>
+
+    @GET("api/analytics/by-category")
+    suspend fun salesByCategory(@Query("user_key") userKey: Int, @Query("date_from") from: String? = null, @Query("date_to") to: String? = null): List<CategoryRevenue>
+
+    @GET("api/analytics/by-doctor")
+    suspend fun salesByDoctor(@Query("user_key") userKey: Int, @Query("date_from") from: String? = null, @Query("date_to") to: String? = null): List<DoctorRevenue>
+
+    @GET("api/analytics/by-centre")
+    suspend fun salesByCentre(@Query("user_key") userKey: Int, @Query("date_from") from: String? = null, @Query("date_to") to: String? = null): List<CentreRevenue>
+
+    @GET("api/analytics/yoy")
+    suspend fun salesYoy(@Query("user_key") userKey: Int): YoyResponse
 }

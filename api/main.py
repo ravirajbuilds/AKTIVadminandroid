@@ -24,6 +24,8 @@ from aktiv_booking import (
     search_tests,
 )
 from config import aktiv_settings, api_key
+import analytics
+import roles
 
 log = logging.getLogger("aktiv_api")
 
@@ -112,7 +114,52 @@ def api_login(body: LoginRequest):
         "user_key": user.user_key,
         "userid": user.userid,
         "username": user.username,
+        "role": user.role,
+        "permissions": user.permissions,
     }
+
+
+def _require_sales(user_key: Optional[int]):
+    try:
+        return roles.require(user_key, "can_view_sales")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@app.get("/api/analytics/summary")
+def api_an_summary(user_key: int, date_from: Optional[str] = None, date_to: Optional[str] = None):
+    _require_sales(user_key)
+    return analytics.summary(date_from, date_to)
+
+
+@app.get("/api/analytics/by-day")
+def api_an_by_day(user_key: int, date_from: Optional[str] = None, date_to: Optional[str] = None):
+    _require_sales(user_key)
+    return analytics.by_day(date_from, date_to)
+
+
+@app.get("/api/analytics/by-category")
+def api_an_by_category(user_key: int, date_from: Optional[str] = None, date_to: Optional[str] = None):
+    _require_sales(user_key)
+    return analytics.by_category(date_from, date_to)
+
+
+@app.get("/api/analytics/by-doctor")
+def api_an_by_doctor(user_key: int, date_from: Optional[str] = None, date_to: Optional[str] = None):
+    _require_sales(user_key)
+    return analytics.by_doctor(date_from, date_to)
+
+
+@app.get("/api/analytics/by-centre")
+def api_an_by_centre(user_key: int, date_from: Optional[str] = None, date_to: Optional[str] = None):
+    _require_sales(user_key)
+    return analytics.by_centre(date_from, date_to)
+
+
+@app.get("/api/analytics/yoy")
+def api_an_yoy(user_key: int):
+    _require_sales(user_key)
+    return analytics.yoy()
 
 
 @app.get("/health")
@@ -201,7 +248,12 @@ def api_create_booking(body: BookingRequest):
 def api_cancel_booking(bill_key: int, body: CancelRequest = CancelRequest()):
     """
     Void receipt amounts only — never deletes bill rows (preserves ALC serials).
+    Requires a staff user whose role allows cancelling (BILLCHANGE / OPD CANCEL / ADMIN).
     """
+    try:
+        roles.require(body.sys_user_key, "can_cancel_booking")
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
         return cancel_booking(bill_key, sys_user_key=body.sys_user_key)
     except ValueError as exc:

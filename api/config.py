@@ -47,7 +47,7 @@ def api_key() -> str:
 
 
 def aktiv_settings() -> dict:
-    """AKTIV write behaviour — receptionist user, test vs live bookings."""
+    """AKTIV write behaviour â€” receptionist user, test vs live bookings."""
     load_env()
     from datetime import date
 
@@ -63,8 +63,9 @@ def aktiv_settings() -> dict:
         test_bill_date = date(2025, 7, 2)
 
     return {
-        "sys_user_key": int(os.environ.get("AKTIV_SYS_USER_KEY", "10")),
+        "sys_user_key": int(os.environ.get("AKTIV_SYS_USER_KEY", "103")),
         "sys_machine_key": int(os.environ.get("AKTIV_SYS_MACHINE_KEY", "27")),
         "allow_live_bookings": allow_live,
         "test_bill_date": test_bill_date,
     }
+

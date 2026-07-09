@@ -1,9 +1,10 @@
 """AKTIV desktop login — validates against SYS_MAST_USERS."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from db import mssql_conn
+from roles import load_user_permissions
 
 
 @dataclass
@@ -11,6 +12,18 @@ class AuthUser:
     user_key: int
     userid: str
     username: str | None
+    role: str = "staff"
+    permissions: dict = field(default_factory=dict)
+
+
+def _primary_role(perms: dict) -> str:
+    if perms.get("is_admin"):
+        return "admin"
+    if perms.get("can_view_sales"):
+        return "account"
+    if perms.get("can_book"):
+        return "reception"
+    return "staff"
 
 
 def authenticate(userid: str, password: str) -> AuthUser:
@@ -38,8 +51,11 @@ def authenticate(userid: str, password: str) -> AuthUser:
     if stored != password:
         raise ValueError("Invalid username or password")
 
+    perms = load_user_permissions(int(user_key))
     return AuthUser(
         user_key=int(user_key),
         userid=str(db_userid or login_id),
         username=str(username) if username else str(db_userid or login_id),
+        role=_primary_role(perms),
+        permissions=perms,
     )

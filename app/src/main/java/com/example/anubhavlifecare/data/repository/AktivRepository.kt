@@ -21,6 +21,19 @@ class AktivRepository(
             api.login(AktivLoginRequest(userid, password))
         }
 
+    // ---- Sales analytics (only for users whose role grants can_view_sales) ----
+    suspend fun salesSummary(userKey: Int, from: String? = null, to: String? = null) =
+        runCatching { api.salesSummary(userKey, from, to) }
+    suspend fun salesByDay(userKey: Int, from: String? = null, to: String? = null) =
+        runCatching { api.salesByDay(userKey, from, to) }
+    suspend fun salesByCategory(userKey: Int, from: String? = null, to: String? = null) =
+        runCatching { api.salesByCategory(userKey, from, to) }
+    suspend fun salesByDoctor(userKey: Int, from: String? = null, to: String? = null) =
+        runCatching { api.salesByDoctor(userKey, from, to) }
+    suspend fun salesByCentre(userKey: Int, from: String? = null, to: String? = null) =
+        runCatching { api.salesByCentre(userKey, from, to) }
+    suspend fun salesYoy(userKey: Int) = runCatching { api.salesYoy(userKey) }
+
     suspend fun listReceptionUsers(): Result<List<AktivReceptionUser>> = runCatching {
         api.listUsers()
     }
