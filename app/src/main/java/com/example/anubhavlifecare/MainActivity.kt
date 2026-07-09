@@ -59,11 +59,18 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        // Sales dashboard is only for roles that can view sales (ADMIN / ACCOUNT).
+        navView.menu.findItem(R.id.nav_sales)?.isVisible = SessionManager.canViewSales(this)
+
         navView.setNavigationItemSelectedListener { item ->
             if (item.itemId == R.id.nav_logout) {
                 SessionManager.clear(this)
                 startActivity(Intent(this, LoginActivity::class.java))
                 finish()
+                true
+            } else if (item.itemId == R.id.nav_sales) {
+                startActivity(Intent(this, com.example.anubhavlifecare.ui.sales.SalesDashboardActivity::class.java))
+                drawerLayout.closeDrawers()
                 true
             } else {
                 val handled = androidx.navigation.ui.NavigationUI.onNavDestinationSelected(item, navController)
