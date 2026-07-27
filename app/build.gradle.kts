@@ -30,9 +30,13 @@ android {
             ?: System.getenv("AKTIV_API_KEY")
             ?: ""
         // Backend base URL, overridable the same way for different clinic LANs.
+        // Default is the public HTTPS endpoint (clinic PC -> cloudflared tunnel),
+        // so the app works off the clinic Wi-Fi too. For LAN-only dev, pass
+        // -PAKTIV_API_URL=http://192.168.29.157:8080/ (cleartext is still allowed
+        // for that host by network_security_config.xml).
         val aktivApiUrl = (project.findProperty("AKTIV_API_URL") as String?)
             ?: System.getenv("AKTIV_API_URL")
-            ?: "http://192.168.29.157:8080/"
+            ?: "https://api.anubhavlifecare.in/"
 
         release {
             isMinifyEnabled = false

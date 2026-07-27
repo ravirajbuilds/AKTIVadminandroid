@@ -18,3 +18,6 @@ __pycache__/
 *.pyc
 env
 etl.log
+
+# Kotlin incremental-compilation scratch dir
+.kotlin/

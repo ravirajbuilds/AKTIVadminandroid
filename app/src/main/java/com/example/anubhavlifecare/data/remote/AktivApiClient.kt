@@ -9,10 +9,12 @@ import java.util.concurrent.TimeUnit
 
 object AktivApiClient {
     /**
-     * Clinic LAN API — run `uvicorn main:app --host 0.0.0.0 --port 8080` in api/.
-     * Override in build.gradle: buildConfigField("String", "AKTIV_API_URL", "\"http://...\"")
+     * Public clinic API (clinic PC -> cloudflared tunnel), so the app works off
+     * the clinic Wi-Fi. On the LAN the same backend is at
+     * http://192.168.29.157:8080/ — run `uvicorn main:app --host 0.0.0.0 --port 8080`
+     * in api/ and build with -PAKTIV_API_URL=http://192.168.29.157:8080/ to use it.
      */
-    const val DEFAULT_BASE_URL = "http://192.168.29.157:8080/"
+    const val DEFAULT_BASE_URL = "https://api.anubhavlifecare.in/"
 
     private val gson = GsonBuilder().setLenient().create()
 
