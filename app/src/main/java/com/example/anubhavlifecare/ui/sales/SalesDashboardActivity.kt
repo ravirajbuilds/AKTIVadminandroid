@@ -32,7 +32,8 @@ import kotlin.math.roundToLong
 /**
  * Sales dashboard — visible only to roles with can_view_sales (ADMIN / ACCOUNT).
  * Charts (MPAndroidChart): revenue trend (line), by-category & by-doctor (bars),
- * year-over-year comparison (multi-line). All data from the /api/analytics/* endpoints,
+ * year-over-year comparison (multi-line). All data comes from the /api/analytics
+ * endpoints (summary, by-day, by-category, by-doctor, by-centre, yoy),
  * which the server also gates by role.
  */
 class SalesDashboardActivity : AppCompatActivity() {

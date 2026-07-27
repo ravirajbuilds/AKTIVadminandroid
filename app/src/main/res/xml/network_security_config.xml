@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The AKTIV Admin app is a LAN-only client: it talks HTTP (no TLS) to the
-    clinic's FastAPI backend, whose address is configured via the AKTIV_API_URL
-    build field (default http://192.168.29.157:8080/). Android 9+ (API 28+)
-    blocks cleartext traffic by default, which would make every API call fail.
+    The AKTIV Admin app talks to the clinic's FastAPI backend, reachable two ways:
 
-    Cleartext is permitted here because the endpoint is a private, on-premises
-    server without a certificate. The clinic server IP can change with the
-    LAN/router, so the base config stays permissive to avoid a hard outage if the
-    address is re-pointed via AKTIV_API_URL. Public HTTPS endpoints are
-    unaffected and remain subject to the platform's secure defaults.
+      * https://api.anubhavlifecare.in/  - the default (clinic PC -> cloudflared
+        tunnel). TLS, so it needs no exception here.
+      * http://192.168.29.157:8080/      - the same backend on the clinic LAN,
+        used by dev builds via -PAKTIV_API_URL=. It has no certificate, and
+        Android 9+ (API 28+) blocks cleartext by default, so those hosts are
+        listed below.
+
+    The base config deliberately keeps the platform's secure default (cleartext
+    denied). Permitting cleartext globally would let anyone on the same network
+    downgrade the public HTTPS endpoint and read patient PII and staff
+    credentials off the wire.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <base-config cleartextTrafficPermitted="false" />
     <!-- The on-premises clinic server and local dev/emulator hosts. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">192.168.29.157</domain>
